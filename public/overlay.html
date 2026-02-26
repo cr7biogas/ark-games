@@ -6,17 +6,73 @@
   <title>ARK Games Overlay</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
+
     body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: transparent;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: transparent !important;
       color: #fff;
       overflow: hidden;
       height: 100vh;
       width: 100vw;
+      -webkit-font-smoothing: antialiased;
     }
-    
-    /* Top Bar - Logo e WOD */
+
+    /* ===== ANIMAZIONI ENTRATA/USCITA ===== */
+    @keyframes slideInLeft {
+      from { transform: translateX(-120%); opacity: 0; }
+      to   { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutLeft {
+      from { transform: translateX(0); opacity: 1; }
+      to   { transform: translateX(-120%); opacity: 0; }
+    }
+    @keyframes slideInRight {
+      from { transform: translateX(120%); opacity: 0; }
+      to   { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+      from { transform: translateX(0); opacity: 1; }
+      to   { transform: translateX(120%); opacity: 0; }
+    }
+    @keyframes slideInUp {
+      from { transform: translateY(120%); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes slideOutDown {
+      from { transform: translateY(0); opacity: 1; }
+      to   { transform: translateY(120%); opacity: 0; }
+    }
+    @keyframes popIn {
+      0%   { transform: scale(0.5); opacity: 0; }
+      70%  { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes scoreFlash {
+      0%   { transform: scale(1); color: #FFD700; }
+      30%  { transform: scale(1.6); color: #fff; text-shadow: 0 0 30px #FFD700, 0 0 60px #FF6B35; }
+      100% { transform: scale(1); color: #FFD700; }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(255,107,53,0.5); }
+      50% { box-shadow: 0 0 40px rgba(255,107,53,0.9), 0 0 60px rgba(255,107,53,0.4); }
+    }
+
+    /* ===== STATI VISIBILITA' ===== */
+    .overlay-element {
+      will-change: transform, opacity;
+      transform: translateZ(0);
+    }
+    .overlay-element.entering { pointer-events: none; }
+    .overlay-element.hidden-anim {
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    /* ===== TOP BAR ===== */
     .top-bar {
       position: absolute;
       top: 20px;
@@ -24,32 +80,40 @@
       right: 20px;
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
     }
-    
+
     .logo {
-      background: rgba(0,0,0,0.9);
+      background: rgba(0,0,0,0.92);
       padding: 2vh 3vw;
       border-radius: 1.5vh;
       font-size: clamp(20px, 5vw, 42px);
       font-weight: bold;
       border: 3px solid #FF6B35;
-      box-shadow: 0 0 20px rgba(255,107,53,0.5);
+      animation: glow 3s ease-in-out infinite;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
-    
-    .logo span { color: #FF6B35; text-shadow: 0 0 10px #FF6B35; }
-    
+    .logo.show { animation: slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards, glow 3s ease-in-out 0.6s infinite; }
+    .logo.hide { animation: slideOutLeft 0.4s ease-in forwards; }
+
+    .logo span { color: #FF6B35; text-shadow: 0 0 15px #FF6B35, 0 0 30px rgba(255,107,53,0.3); }
+
     .wod-name {
       background: linear-gradient(135deg, #FF6B35, #FF8C00);
       padding: 2vh 3vw;
       border-radius: 1.5vh;
       font-size: clamp(18px, 4vw, 36px);
       font-weight: bold;
-      box-shadow: 0 0 25px rgba(255,107,53,0.7);
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      box-shadow: 0 0 25px rgba(255,107,53,0.7), 0 4px 15px rgba(0,0,0,0.5);
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
-    
-    /* Timer centrale in basso */
+    .wod-name.show { animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both; }
+    .wod-name.hide { animation: slideOutRight 0.4s ease-in forwards; }
+
+    /* ===== TIMER ===== */
     .timer-container {
       position: absolute;
       bottom: 3vh;
@@ -57,54 +121,53 @@
       transform: translateX(-50%);
       text-align: center;
     }
-    
+    .timer-container.show { animation: slideInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
+    .timer-container.hide { animation: slideOutDown 0.4s ease-in forwards; }
+
     .timer {
       font-size: clamp(60px, 18vw, 150px);
       font-weight: bold;
       font-family: 'Courier New', monospace;
-      text-shadow: 0 0 30px rgba(255,255,255,0.8), 4px 4px 8px rgba(0,0,0,0.9);
+      text-shadow: 0 0 30px rgba(255,255,255,0.8), 4px 4px 8px rgba(0,0,0,0.9), 0 0 60px rgba(255,255,255,0.3);
       color: #fff;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.8);
       padding: 1vh 4vw;
       border-radius: 2vh;
       border: 3px solid #fff;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
-    
-    .timer.countdown { 
-      color: #FFD700; 
+
+    .timer.countdown {
+      color: #FFD700;
       border-color: #FFD700;
-      text-shadow: 0 0 40px #FFD700, 4px 4px 8px rgba(0,0,0,0.9);
+      text-shadow: 0 0 40px #FFD700, 4px 4px 8px rgba(0,0,0,0.9), 0 0 80px rgba(255,215,0,0.4);
     }
-    .timer.running { 
-      color: #00FF7F; 
+    .timer.running {
+      color: #00FF7F;
       border-color: #00FF7F;
-      text-shadow: 0 0 40px #00FF7F, 4px 4px 8px rgba(0,0,0,0.9);
+      text-shadow: 0 0 40px #00FF7F, 4px 4px 8px rgba(0,0,0,0.9), 0 0 80px rgba(0,255,127,0.4);
     }
-    .timer.stopped { 
-      color: #fff; 
+    .timer.stopped {
+      color: #fff;
       border-color: #666;
     }
-    .timer.timecap { 
-      color: #FF4444; 
+    .timer.timecap {
+      color: #FF4444;
       border-color: #FF4444;
-      text-shadow: 0 0 40px #FF4444, 4px 4px 8px rgba(0,0,0,0.9);
+      text-shadow: 0 0 40px #FF4444, 4px 4px 8px rgba(0,0,0,0.9), 0 0 80px rgba(255,68,68,0.5);
       animation: pulse 0.5s infinite;
     }
-    
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-    
+
     .timer-label {
       font-size: clamp(16px, 3vw, 28px);
       color: #fff;
       margin-top: 1vh;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.9), 0 0 15px rgba(0,0,0,0.5);
       font-weight: bold;
     }
-    
-    /* Lane info in basso */
+
+    /* ===== LANES ===== */
     .lanes-bar {
       position: absolute;
       bottom: 18vh;
@@ -114,90 +177,144 @@
       justify-content: center;
       gap: 2vw;
     }
-    
+
     .lane-card {
-      background: rgba(0,0,0,0.9);
+      background: rgba(0,0,0,0.92);
       border: 3px solid #FF6B35;
       border-radius: 2vh;
       padding: 2vh 3vw;
       min-width: 20vw;
       text-align: center;
-      box-shadow: 0 0 20px rgba(255,107,53,0.4);
+      box-shadow: 0 0 20px rgba(255,107,53,0.4), 0 4px 15px rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
     }
-    
-    .lane-card.active { 
-      border-color: #00FF7F; 
-      background: rgba(0,255,127,0.15); 
-      box-shadow: 0 0 30px rgba(0,255,127,0.6);
+    .lane-card.show { animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    .lane-card:nth-child(1).show { animation-delay: 0.2s; }
+    .lane-card:nth-child(2).show { animation-delay: 0.35s; }
+    .lane-card:nth-child(3).show { animation-delay: 0.5s; }
+    .lane-card.hide { animation: slideOutDown 0.3s ease-in forwards; }
+
+    .lane-card.active {
+      border-color: #00FF7F;
+      background: rgba(0,255,127,0.12);
+      box-shadow: 0 0 30px rgba(0,255,127,0.6), 0 0 60px rgba(0,255,127,0.2);
     }
-    
+
     .lane-number {
       font-size: clamp(12px, 2vw, 20px);
       color: #FF6B35;
       margin-bottom: 0.5vh;
       font-weight: bold;
       text-transform: uppercase;
+      letter-spacing: 0.1em;
     }
-    
+
     .team-name {
       font-size: clamp(14px, 2.5vw, 28px);
       font-weight: bold;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.4);
     }
-    
+
     .team-emoji {
       font-size: clamp(30px, 6vw, 60px);
       display: block;
       margin-bottom: 0.5vh;
       filter: drop-shadow(0 0 10px rgba(255,255,255,0.5));
     }
-    
+
     .team-score {
       font-size: clamp(20px, 4vw, 40px);
       color: #FFD700;
       font-weight: bold;
       margin-top: 0.5vh;
-      text-shadow: 0 0 15px #FFD700;
+      text-shadow: 0 0 15px #FFD700, 0 0 30px rgba(255,215,0,0.3);
+      transition: transform 0.15s ease-out;
     }
-    
-    /* Hidden when no data */
-    .hidden { display: none !important; }
+    .team-score.flash { animation: scoreFlash 0.5s ease-out; }
+
+    /* ===== VIDEO BACKGROUND ===== */
+    .video-layer {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      background: #000;
+    }
+    .video-layer img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+    .no-signal {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #666;
+      z-index: 1;
+    }
+    .overlay-layer {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 10;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
+
+  <!-- VIDEO DALLA REGIA -->
+  <div class="video-layer">
+    <img id="cameraFeed" style="display:none;" />
+    <div class="no-signal" id="noSignal">
+      <div style="font-size: 80px; margin-bottom: 20px;">🐾</div>
+      <div style="font-size: 48px; font-weight: bold; color: #FF6B35;">ARK GAMES 2026</div>
+      <div style="font-size: 24px; margin-top: 20px; color: #888;">In attesa della camera...</div>
+    </div>
+  </div>
+
+  <!-- OVERLAY GRAFICO -->
+  <div class="overlay-layer">
+
   <!-- Top Bar -->
   <div class="top-bar">
-    <div class="logo">🐾 <span>ARK</span> GAMES</div>
-    <div class="wod-name" id="wodName">In attesa...</div>
+    <div class="logo overlay-element hidden-anim" id="logo">🐾 <span>ARK</span> GAMES</div>
+    <div class="wod-name overlay-element hidden-anim" id="wodName">In attesa...</div>
   </div>
-  
+
   <!-- Lanes -->
   <div class="lanes-bar" id="lanesBar">
-    <div class="lane-card" id="lane1">
+    <div class="lane-card overlay-element hidden-anim" id="lane1">
       <div class="lane-number">LANE 1</div>
       <span class="team-emoji" id="emoji1">🐾</span>
       <div class="team-name" id="team1">-</div>
       <div class="team-score" id="score1"></div>
     </div>
-    <div class="lane-card" id="lane2">
+    <div class="lane-card overlay-element hidden-anim" id="lane2">
       <div class="lane-number">LANE 2</div>
       <span class="team-emoji" id="emoji2">🐾</span>
       <div class="team-name" id="team2">-</div>
       <div class="team-score" id="score2"></div>
     </div>
-    <div class="lane-card" id="lane3">
+    <div class="lane-card overlay-element hidden-anim" id="lane3">
       <div class="lane-number">LANE 3</div>
       <span class="team-emoji" id="emoji3">🐾</span>
       <div class="team-name" id="team3">-</div>
       <div class="team-score" id="score3"></div>
     </div>
   </div>
-  
+
   <!-- Timer -->
-  <div class="timer-container">
+  <div class="timer-container overlay-element hidden-anim" id="timerWrap">
     <div class="timer stopped" id="timer">00:00</div>
     <div class="timer-label" id="timerLabel">🐾 ARK GAMES 2026</div>
   </div>
+
+  </div><!-- /overlay-layer -->
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -213,7 +330,117 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Server time sync
+// ===== VIDEO DALLA REGIA =====
+const cameraFeed = document.getElementById('cameraFeed');
+const noSignal = document.getElementById('noSignal');
+let currentCameraUrl = null;
+
+onValue(ref(db, 'ark_regia/activeCamera'), (snap) => {
+  const data = snap.val();
+  if (data && data.url) {
+    const url = data.url.split('?')[0];
+    if (currentCameraUrl !== url) {
+      currentCameraUrl = url;
+      cameraFeed.src = url;
+    }
+    cameraFeed.style.display = 'block';
+    noSignal.style.display = 'none';
+  } else {
+    currentCameraUrl = null;
+    cameraFeed.removeAttribute('src');
+    cameraFeed.style.display = 'none';
+    noSignal.style.display = 'flex';
+  }
+});
+
+// Riconnessione su errore
+cameraFeed.addEventListener('error', () => {
+  if (currentCameraUrl) {
+    cameraFeed.style.opacity = '0.3';
+    setTimeout(() => {
+      if (currentCameraUrl) {
+        cameraFeed.src = currentCameraUrl;
+        cameraFeed.style.opacity = '1';
+      }
+    }, 3000);
+  }
+});
+
+// ===== ANIMAZIONE SHOW/HIDE =====
+function showElement(el, animClass) {
+  el.classList.remove('hidden-anim', 'hide');
+  el.classList.add('show');
+}
+
+function hideElement(el) {
+  el.classList.remove('show');
+  el.classList.add('hide');
+  el.addEventListener('animationend', () => {
+    if (el.classList.contains('hide')) {
+      el.classList.add('hidden-anim');
+      el.classList.remove('hide');
+    }
+  }, { once: true });
+}
+
+// ===== OVERLAY VISIBILITY DA REGIA =====
+const logo = document.getElementById('logo');
+const wodNameEl = document.getElementById('wodName');
+const timerWrap = document.getElementById('timerWrap');
+const laneCards = [
+  document.getElementById('lane1'),
+  document.getElementById('lane2'),
+  document.getElementById('lane3')
+];
+
+let overlayVisible = false;
+let firstLoad = true;
+
+onValue(ref(db, 'ark_regia/showOverlay'), (snap) => {
+  const val = snap.val();
+  // Default: mostra overlay se valore non esiste o e' true
+  const show = val === null || val === true;
+
+  if (show && !overlayVisible) {
+    overlayVisible = true;
+    if (firstLoad) {
+      // Prima apertura: mostra subito senza animazione
+      [logo, wodNameEl, timerWrap, ...laneCards].forEach(el => {
+        el.classList.remove('hidden-anim');
+        el.classList.add('show');
+      });
+    } else {
+      showElement(logo);
+      showElement(wodNameEl);
+      showElement(timerWrap);
+      laneCards.forEach(c => showElement(c));
+    }
+  } else if (!show && overlayVisible) {
+    overlayVisible = false;
+    hideElement(logo);
+    hideElement(wodNameEl);
+    hideElement(timerWrap);
+    laneCards.forEach(c => hideElement(c));
+  }
+  firstLoad = false;
+});
+
+// Controlla singoli elementi (opzionale dalla regia)
+onValue(ref(db, 'ark_regia/overlayElements'), (snap) => {
+  const els = snap.val();
+  if (!els || !overlayVisible) return;
+  // Toggle singoli: { showTimer: true, showLanes: true, showLogo: true }
+  if (els.showTimer === false) hideElement(timerWrap);
+  else if (els.showTimer === true && overlayVisible) showElement(timerWrap);
+
+  if (els.showLanes === false) laneCards.forEach(c => hideElement(c));
+  else if (els.showLanes === true && overlayVisible) laneCards.forEach(c => showElement(c));
+
+  if (els.showLogo === false) { hideElement(logo); hideElement(wodNameEl); }
+  else if (els.showLogo === true && overlayVisible) { showElement(logo); showElement(wodNameEl); }
+});
+
+// ===== TIMER =====
 let serverTimeOffset = 0;
 onValue(ref(db, '.info/serverTimeOffset'), (snap) => {
   serverTimeOffset = snap.val() || 0;
@@ -223,35 +450,19 @@ function getSyncedTime() {
   return Date.now() + serverTimeOffset;
 }
 
-// Elements
 const timerEl = document.getElementById('timer');
 const timerLabelEl = document.getElementById('timerLabel');
-const wodNameEl = document.getElementById('wodName');
 
-// Extract emoji from team name
-function extractEmoji(name) {
-  if (!name) return '🐾';
-  const match = name.match(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u);
-  return match ? match[0] : '🐾';
-}
-
-function extractTeamName(name) {
-  if (!name) return '-';
-  return name.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim();
-}
-
-// Timer interval
 let timerInterval = null;
 
-// Listen to timer
 onValue(ref(db, 'ark_timer'), (snap) => {
   const timer = snap.val();
-  
+
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
   }
-  
+
   if (!timer || timer.status === 'stopped') {
     timerEl.textContent = '00:00';
     timerEl.className = 'timer stopped';
@@ -259,12 +470,12 @@ onValue(ref(db, 'ark_timer'), (snap) => {
     wodNameEl.textContent = 'In attesa...';
     return;
   }
-  
+
   wodNameEl.textContent = timer.wodName || 'Workout';
-  
+
   function updateTimer() {
     const now = getSyncedTime();
-    
+
     if (timer.status === 'countdown') {
       const remaining = Math.ceil((timer.startAt - now) / 1000);
       if (remaining <= 0) {
@@ -278,7 +489,7 @@ onValue(ref(db, 'ark_timer'), (snap) => {
     } else if (timer.status === 'running') {
       const elapsed = Math.floor((now - timer.startAt) / 1000);
       const capSeconds = (timer.cap || 10) * 60;
-      
+
       if (elapsed >= capSeconds) {
         timerEl.textContent = 'TIME CAP!';
         timerEl.className = 'timer timecap';
@@ -290,21 +501,32 @@ onValue(ref(db, 'ark_timer'), (snap) => {
       }
     }
   }
-  
+
   updateTimer();
   timerInterval = setInterval(updateTimer, 100);
 });
 
-// Listen to lane athletes
+// ===== LANE ATHLETES =====
+function extractEmoji(name) {
+  if (!name) return '🐾';
+  const match = name.match(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u);
+  return match ? match[0] : '🐾';
+}
+
+function extractTeamName(name) {
+  if (!name) return '-';
+  return name.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/gu, '').trim();
+}
+
 onValue(ref(db, 'ark_timer/laneAthletes'), (snap) => {
   const athletes = snap.val() || [];
-  
+
   for (let i = 1; i <= 3; i++) {
     const athlete = athletes[i];
     const emojiEl = document.getElementById(`emoji${i}`);
     const teamEl = document.getElementById(`team${i}`);
     const cardEl = document.getElementById(`lane${i}`);
-    
+
     if (athlete && athlete.teamName) {
       emojiEl.textContent = extractEmoji(athlete.teamName);
       teamEl.textContent = extractTeamName(athlete.teamName);
@@ -317,21 +539,28 @@ onValue(ref(db, 'ark_timer/laneAthletes'), (snap) => {
   }
 });
 
-// Listen to LIVE SCORES from judges
+// ===== LIVE SCORES =====
+const lastScores = {};
 onValue(ref(db, 'ark_timer/liveScores'), (snap) => {
   const scores = snap.val() || {};
-  
+
   for (let i = 1; i <= 3; i++) {
     const scoreEl = document.getElementById(`score${i}`);
     const laneScore = scores[i];
-    
+
     if (laneScore && laneScore.reps !== undefined) {
-      scoreEl.textContent = laneScore.reps + ' REP';
-      // Animate on change
-      scoreEl.style.transform = 'scale(1.3)';
-      setTimeout(() => scoreEl.style.transform = 'scale(1)', 150);
+      const newVal = laneScore.reps;
+      // Flash animazione solo se il punteggio e' cambiato
+      if (lastScores[i] !== newVal) {
+        lastScores[i] = newVal;
+        scoreEl.textContent = newVal + ' REP';
+        scoreEl.classList.remove('flash');
+        void scoreEl.offsetWidth; // force reflow per ripartire animazione
+        scoreEl.classList.add('flash');
+      }
     } else {
       scoreEl.textContent = '';
+      lastScores[i] = undefined;
     }
   }
 });

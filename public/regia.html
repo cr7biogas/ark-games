@@ -371,6 +371,21 @@
       <button class="toggle-btn" id="overlayToggle" onclick="toggleOverlay()">
         Mostra Overlay ARK Games
       </button>
+      <div id="overlaySubControls" style="display:none; margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+        <button class="toggle-btn active" id="toggleLogo" onclick="toggleElement('showLogo')" style="flex:1; padding:8px; font-size:11px;">Logo</button>
+        <button class="toggle-btn active" id="toggleTimer" onclick="toggleElement('showTimer')" style="flex:1; padding:8px; font-size:11px;">Timer</button>
+        <button class="toggle-btn active" id="toggleLanes" onclick="toggleElement('showLanes')" style="flex:1; padding:8px; font-size:11px;">Lanes</button>
+      </div>
+    </div>
+
+    <!-- TASTI RAPIDI -->
+    <div class="config-section" style="border-top: 1px solid #333; padding: 10px 15px;">
+      <h3 style="font-size:12px; color:#555; margin-bottom:4px;">TASTI RAPIDI</h3>
+      <div style="font-size:11px; color:#666; line-height:1.6;">
+        <span style="color:#FF6B35; font-weight:bold;">1-5</span> Camere &nbsp;
+        <span style="color:#FF6B35; font-weight:bold;">O</span> Overlay &nbsp;
+        <span style="color:#FF6B35; font-weight:bold;">F</span> Fullscreen
+      </div>
     </div>
     
     <!-- SCANSIONE AUTO -->
@@ -427,7 +442,11 @@ let showOverlay = false;
 let reconnectAttempts = 0;
 const MAX_RECONNECT = 5;
 
-// MJPEG stream continuo - no refresh necessario
+// Converte URL videofeed in URL snapshot
+function getSnapshotUrl(url) {
+  if (!url) return '';
+  return url.replace('/videofeed', '/shot.jpg');
+}
 
 // Aggiorna orario
 function updateTime() {
@@ -437,60 +456,112 @@ function updateTime() {
 setInterval(updateTime, 1000);
 updateTime();
 
-// Render camera grid
+// Refresh preview snapshots ogni 2 secondi (senza ricreare il DOM)
+let previewInterval = null;
+function startPreviewRefresh() {
+  if (previewInterval) clearInterval(previewInterval);
+  previewInterval = setInterval(() => {
+    document.querySelectorAll('.preview-video[data-snapshot-url]').forEach(img => {
+      const base = img.getAttribute('data-snapshot-url');
+      if (base) img.src = base + '?t=' + Date.now();
+    });
+  }, 2000);
+}
+
+// Render camera grid - aggiorna DOM senza distruggerlo
 function renderCameras() {
   const grid = document.getElementById('cameraGrid');
-  grid.innerHTML = '';
-  
   let connectedCount = 0;
-  
-  cameras.forEach(cam => {
+
+  cameras.forEach((cam, i) => {
     const isConnected = cam.url && cam.url.length > 10;
     if (isConnected) connectedCount++;
-    
-    const div = document.createElement('div');
+
+    let div = grid.children[i];
+    const needsCreate = !div || div.getAttribute('data-cam-id') !== cam.id;
+
+    if (needsCreate) {
+      // Crea solo se non esiste o l'ID e' cambiato
+      if (div) div.remove();
+      div = document.createElement('div');
+      div.setAttribute('data-cam-id', cam.id);
+      div.innerHTML = `
+        <img class="preview-video" style="transition: opacity 0.3s;"
+             onerror="this.style.opacity='0.3';"
+             onload="this.style.opacity='1';" />
+        <div class="preview-video offline-placeholder" style="background:#222; display:flex; align-items:center; justify-content:center; height:120px;">
+          <span style="color:#666">Offline</span>
+        </div>
+        <div class="preview-info">
+          <span class="cam-name"></span>
+          <span class="cam-status"></span>
+        </div>
+      `;
+      div.onclick = () => selectCamera(cam.id);
+      if (i < grid.children.length) {
+        grid.insertBefore(div, grid.children[i]);
+      } else {
+        grid.appendChild(div);
+      }
+    }
+
+    // Aggiorna classi e contenuti senza ricreare
     div.className = `camera-preview ${activeCamera === cam.id ? 'active' : ''} ${!isConnected ? 'offline' : ''}`;
-    div.onclick = () => selectCamera(cam.id);
-    
-    div.innerHTML = `
-      <img class="preview-video"
-           src="${isConnected ? cam.url : ''}"
-           onerror="this.style.opacity='0.3';"
-           onload="this.style.opacity='1';"
-           style="${!isConnected ? 'display:none' : ''}; transition: opacity 0.3s;" />
-      <div class="preview-video offline-placeholder" style="${isConnected ? 'display:none' : ''}; background:#222; display:flex; align-items:center; justify-content:center; height:120px;">
-        <span style="color:#666">📵 Offline</span>
-      </div>
-      <div class="preview-info">
-        <span class="cam-name">${cam.name}</span>
-        <span class="cam-status">${activeCamera === cam.id ? '● LIVE' : (isConnected ? 'Ready' : 'Config')}</span>
-      </div>
-    `;
-    
-    grid.appendChild(div);
+
+    const img = div.querySelector('img.preview-video');
+    const placeholder = div.querySelector('.offline-placeholder');
+    const camName = div.querySelector('.cam-name');
+    const camStatus = div.querySelector('.cam-status');
+
+    if (isConnected) {
+      const snapUrl = getSnapshotUrl(cam.url);
+      img.setAttribute('data-snapshot-url', snapUrl);
+      if (!img.src || !img.src.includes(snapUrl.split('?')[0])) {
+        img.src = snapUrl + '?t=' + Date.now();
+      }
+      img.style.display = '';
+      placeholder.style.display = 'none';
+    } else {
+      img.removeAttribute('data-snapshot-url');
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      placeholder.style.display = 'flex';
+    }
+
+    camName.textContent = cam.name;
+    camStatus.textContent = activeCamera === cam.id ? 'LIVE' : (isConnected ? 'Ready' : 'Config');
   });
-  
+
+  // Rimuovi eventuali elementi extra
+  while (grid.children.length > cameras.length) {
+    grid.lastChild.remove();
+  }
+
   document.getElementById('cameraCount').textContent = connectedCount;
 }
 
-// Seleziona camera
+// Seleziona camera - usa MJPEG stream solo per output principale
 window.selectCamera = function(camId) {
   const cam = cameras.find(c => c.id === camId);
   if (!cam || !cam.url) {
     alert('Camera non configurata! Aggiungi prima l\'URL.');
     return;
   }
-  
+
   activeCamera = camId;
-  
+
+  const mainVideo = document.getElementById('mainVideo');
   document.getElementById('noSignal').style.display = 'none';
-  document.getElementById('mainVideo').style.display = 'block';
-  document.getElementById('mainVideo').src = cam.url;
+  mainVideo.style.display = 'block';
+  // Solo l'output principale usa lo stream MJPEG continuo
+  if (!mainVideo.src || !mainVideo.src.includes(cam.url)) {
+    mainVideo.src = cam.url;
+  }
   document.getElementById('mainCameraName').textContent = cam.name;
-  
+
   // Salva su Firebase
   set(ref(db, 'ark_regia/activeCamera'), { id: camId, name: cam.name, url: cam.url });
-  
+
   renderCameras();
 }
 
@@ -530,9 +601,53 @@ window.toggleOverlay = function() {
   const btn = document.getElementById('overlayToggle');
   btn.classList.toggle('active', showOverlay);
   btn.textContent = showOverlay ? '✓ Overlay Attivo' : 'Mostra Overlay ARK Games';
-  
+  document.getElementById('overlaySubControls').style.display = showOverlay ? 'flex' : 'none';
+
   set(ref(db, 'ark_regia/showOverlay'), showOverlay);
 }
+
+// Toggle singoli elementi overlay
+const overlayElements = { showLogo: true, showTimer: true, showLanes: true };
+window.toggleElement = function(key) {
+  overlayElements[key] = !overlayElements[key];
+  const btnMap = { showLogo: 'toggleLogo', showTimer: 'toggleTimer', showLanes: 'toggleLanes' };
+  document.getElementById(btnMap[key]).classList.toggle('active', overlayElements[key]);
+  set(ref(db, 'ark_regia/overlayElements'), overlayElements);
+}
+
+// ===== TASTI RAPIDI =====
+document.addEventListener('keydown', (e) => {
+  // Non attivare se si sta scrivendo in un input
+  if (e.target.tagName === 'INPUT') return;
+
+  const key = e.key.toLowerCase();
+
+  // 1-5: seleziona camera
+  if (key >= '1' && key <= '5') {
+    const idx = parseInt(key) - 1;
+    if (idx < cameras.length && cameras[idx].url) {
+      selectCamera(cameras[idx].id);
+    }
+    return;
+  }
+
+  // O: toggle overlay
+  if (key === 'o') {
+    toggleOverlay();
+    return;
+  }
+
+  // F: fullscreen output principale
+  if (key === 'f') {
+    const output = document.getElementById('mainOutput');
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      output.requestFullscreen().catch(() => {});
+    }
+    return;
+  }
+});
 
 // Scansione automatica rete per IP Webcam
 window.scanNetwork = function() {
@@ -649,16 +764,17 @@ window.autoAddAll = function() {
   document.getElementById('scanStatus').innerHTML = '<span style="color:#2ecc71;">Tutte le camere aggiunte!</span>';
 }
 
-// Pulisci vecchi dati Firebase e salva nuove camere
-set(ref(db, 'ark_regia/cameras'), DEFAULT_CAMERAS);
-set(ref(db, 'ark_regia/activeCamera'), null);
-
-// Carica camere da Firebase
+// Carica camere da Firebase (primo caricamento: se non ci sono, salva i default)
+let firstCameraLoad = true;
 onValue(ref(db, 'ark_regia/cameras'), (snap) => {
   const data = snap.val();
   if (data && Array.isArray(data)) {
     cameras = data;
+  } else if (firstCameraLoad) {
+    // Solo se non ci sono dati, salva i default
+    set(ref(db, 'ark_regia/cameras'), DEFAULT_CAMERAS);
   }
+  firstCameraLoad = false;
   renderCameras();
 });
 
@@ -666,10 +782,14 @@ onValue(ref(db, 'ark_regia/cameras'), (snap) => {
 onValue(ref(db, 'ark_regia/activeCamera'), (snap) => {
   const data = snap.val();
   if (data && data.id) {
+    const mainVideo = document.getElementById('mainVideo');
     activeCamera = data.id;
     document.getElementById('noSignal').style.display = 'none';
-    document.getElementById('mainVideo').style.display = 'block';
-    document.getElementById('mainVideo').src = data.url;
+    mainVideo.style.display = 'block';
+    // Aggiorna src solo se cambiata davvero
+    if (!mainVideo.src || !mainVideo.src.includes(data.url)) {
+      mainVideo.src = data.url;
+    }
     document.getElementById('mainCameraName').textContent = data.name;
     renderCameras();
   }
@@ -677,6 +797,7 @@ onValue(ref(db, 'ark_regia/activeCamera'), (snap) => {
 
 // Init
 renderCameras();
+startPreviewRefresh();
 </script>
 
 </body>

@@ -16,7 +16,7 @@
       width: 100vw;
     }
     
-    /* Video a tutto schermo */
+    /* Video a tutto schermo - Canvas GPU pipeline */
     .video-container {
       position: absolute;
       top: 0;
@@ -24,15 +24,26 @@
       width: 100%;
       height: 100%;
       z-index: 1;
+      contain: layout style;
     }
-    
-    .video-container img {
+
+    .stream-canvas {
+      position: absolute;
+      top: 0; left: 0;
       width: 100%;
       height: 100%;
       object-fit: contain;
       background: #000;
+      opacity: 0;
+      will-change: opacity, transform;
+      transform: translateZ(0);
+      image-rendering: auto;
     }
-    
+
+    .stream-canvas.visible {
+      opacity: 1;
+    }
+
     .no-signal {
       position: absolute;
       top: 50%;
@@ -42,13 +53,30 @@
       color: #666;
       z-index: 2;
     }
-    
+
     .no-signal img {
       max-width: 60%;
       max-height: 60vh;
       border-radius: 20px;
       margin-bottom: 20px;
     }
+
+    .stream-badge {
+      position: fixed;
+      bottom: 8px;
+      left: 8px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      font-family: monospace;
+      z-index: 100;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .stream-badge.mjpeg { background: #2ecc71; color: #000; }
+    .stream-badge.snapshot { background: #f39c12; color: #000; }
+    .stream-badge.offline { background: #e74c3c; color: #fff; }
     
     /* ===== OVERLAY ===== */
     .overlay {
@@ -224,15 +252,19 @@
 </head>
 <body>
 
-  <!-- Video Camera -->
+  <!-- Video Camera - Canvas GPU Pipeline -->
   <div class="video-container">
-    <img id="mainVideo" style="display:none;" />
+    <canvas id="canvasA" class="stream-canvas"></canvas>
+    <canvas id="canvasB" class="stream-canvas"></canvas>
+    <!-- MJPEG source nascosto - il browser riceve lo stream qui -->
+    <img id="mjpegSrc" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;" />
     <div class="no-signal" id="noSignal">
       <div style="font-size: 80px; margin-bottom: 20px;">🐾</div>
       <div style="font-size: 48px; font-weight: bold; color: #FF6B35;">ARK GAMES 2026</div>
       <div style="font-size: 24px; margin-top: 20px; color: #888;">In attesa della camera...</div>
     </div>
   </div>
+  <div class="stream-badge offline" id="streamBadge">OFF</div>
   
   <!-- Overlay (solo se attivato dalla regia) -->
   <div class="overlay hidden" id="overlay">
@@ -282,51 +314,249 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const mainVideo = document.getElementById('mainVideo');
 const noSignal = document.getElementById('noSignal');
 const overlayEl = document.getElementById('overlay');
+const canvasA = document.getElementById('canvasA');
+const canvasB = document.getElementById('canvasB');
+const ctxA = canvasA.getContext('2d', { alpha: false, desynchronized: true });
+const ctxB = canvasB.getContext('2d', { alpha: false, desynchronized: true });
+const mjpegSrc = document.getElementById('mjpegSrc');
+const badge = document.getElementById('streamBadge');
 
-// ===== CAMERA DALLA REGIA =====
-let currentCameraUrl = null;
+// Ottimizza canvas rendering
+[ctxA, ctxB].forEach(ctx => {
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+});
 
-// Auto-refresh video ogni 5 secondi per stabilità
-setInterval(() => {
-  if (currentCameraUrl && mainVideo.style.display !== 'none') {
-    const baseUrl = currentCameraUrl.split('?')[0];
-    mainVideo.src = baseUrl + '?t=' + Date.now();
+// Pool di Image riutilizzabili (zero garbage collection)
+const imgPool = [new Image(), new Image()];
+let poolIdx = 0;
+function getPooledImage() {
+  poolIdx = (poolIdx + 1) % imgPool.length;
+  const img = imgPool[poolIdx];
+  img.onload = null;
+  img.onerror = null;
+  return img;
+}
+
+// =====================================================
+// CANVAS ADAPTIVE STREAM ENGINE
+//
+// MJPEG mode:
+//   <img> nascosto riceve stream MJPEG dal browser
+//   requestAnimationFrame disegna img -> canvas a 60fps
+//   Risultato: massima fluidita', zero DOM layout
+//
+// Snapshot mode (fallback):
+//   Image pool carica /shot.jpg
+//   createImageBitmap() decodifica JPEG off-thread
+//   Draw diretto su canvas
+//   Pipeline: prossimo frame parte subito dopo il draw
+//
+// Camera switch: crossfade CSS tra due canvas
+// =====================================================
+const Engine = {
+  url: null,
+  mode: null,           // 'mjpeg' | 'snapshot'
+  active: 'A',          // canvas visibile
+  rafId: null,          // requestAnimationFrame ID
+  polling: false,
+  timers: {},
+  canvasW: 0, canvasH: 0,  // cache dimensioni per evitare resize
+
+  canvas()  { return this.active === 'A' ? canvasA : canvasB; },
+  ctx()     { return this.active === 'A' ? ctxA : ctxB; },
+  nextCanvas() { return this.active === 'A' ? canvasB : canvasA; },
+  nextCtx()    { return this.active === 'A' ? ctxB : ctxA; },
+  snapUrl() { return this.url ? this.url.replace('/videofeed', '/shot.jpg') : null; },
+
+  clearAll() {
+    if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
+    Object.values(this.timers).forEach(t => clearTimeout(t));
+    this.timers = {};
+    this.polling = false;
+    mjpegSrc.onload = null;
+    mjpegSrc.onerror = null;
+    mjpegSrc.removeAttribute('src');
+  },
+
+  setBadge(m) {
+    badge.className = 'stream-badge ' + m;
+    badge.textContent = m === 'mjpeg' ? 'MJPEG' : m === 'snapshot' ? 'SNAP' : 'OFF';
+  },
+
+  // Disegna immagine su canvas con resize intelligente
+  drawFrame(ctx, canvas, source) {
+    const w = source.naturalWidth || source.width;
+    const h = source.naturalHeight || source.height;
+    if (!w || !h) return;
+    // Resize canvas solo se dimensioni cambiate
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    ctx.drawImage(source, 0, 0, w, h);
+  },
+
+  // === CROSSFADE tra canvas (cambio camera) ===
+  crossfade() {
+    const show = this.nextCanvas();
+    const hide = this.canvas();
+    show.style.transition = 'opacity 0.5s ease';
+    hide.style.transition = 'opacity 0.5s ease';
+    show.classList.add('visible');
+    hide.classList.remove('visible');
+    this.active = this.active === 'A' ? 'B' : 'A';
+  },
+
+  // === CONNECT: nuova camera ===
+  connect(url) {
+    if (this.url === url) return;
+    this.clearAll();
+    this.url = url;
+    noSignal.style.display = 'none';
+    this.tryMjpeg();
+  },
+
+  // === MJPEG MODE ===
+  // img nascosto riceve lo stream, rAF loop disegna su canvas
+  tryMjpeg() {
+    this.mode = 'mjpeg';
+    this.setBadge('mjpeg');
+    let gotFirstFrame = false;
+
+    mjpegSrc.onload = () => {
+      if (gotFirstFrame) return;
+      gotFirstFrame = true;
+      clearTimeout(this.timers.mjpegTimeout);
+      mjpegSrc.onload = null;
+      // Primo frame: disegna su canvas nascosto, poi crossfade
+      this.drawFrame(this.nextCtx(), this.nextCanvas(), mjpegSrc);
+      this.crossfade();
+      // Avvia il render loop a 60fps
+      this.startMjpegLoop();
+    };
+
+    mjpegSrc.onerror = () => {
+      if (gotFirstFrame) {
+        // Stream caduto durante la trasmissione
+        this.switchToSnapshot();
+        return;
+      }
+      gotFirstFrame = true;
+      clearTimeout(this.timers.mjpegTimeout);
+      mjpegSrc.onload = null;
+      mjpegSrc.onerror = null;
+      this.switchToSnapshot();
+    };
+
+    mjpegSrc.src = this.url;
+
+    // Se MJPEG non risponde in 5s -> snapshot
+    this.timers.mjpegTimeout = setTimeout(() => {
+      if (!gotFirstFrame) {
+        gotFirstFrame = true;
+        mjpegSrc.onload = null;
+        mjpegSrc.onerror = null;
+        mjpegSrc.removeAttribute('src');
+        this.switchToSnapshot();
+      }
+    }, 5000);
+  },
+
+  // Loop MJPEG: disegna img -> canvas ogni frame del monitor
+  startMjpegLoop() {
+    const loop = () => {
+      if (this.mode !== 'mjpeg') return;
+      if (mjpegSrc.naturalWidth > 0) {
+        this.drawFrame(this.ctx(), this.canvas(), mjpegSrc);
+      }
+      this.rafId = requestAnimationFrame(loop);
+    };
+    this.rafId = requestAnimationFrame(loop);
+  },
+
+  // === SNAPSHOT MODE (fallback) ===
+  switchToSnapshot() {
+    if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
+    mjpegSrc.removeAttribute('src');
+    this.mode = 'snapshot';
+    this.polling = true;
+    this.setBadge('snapshot');
+    this.pollFrame();
+
+    // Ogni 30s riprova MJPEG
+    this.timers.mjpegRetry = setInterval(() => {
+      if (this.mode !== 'snapshot' || !this.url) return;
+      const probe = new Image();
+      probe.onload = () => {
+        clearInterval(this.timers.mjpegRetry);
+        this.polling = false;
+        this.tryMjpeg();
+      };
+      probe.onerror = () => {};
+      probe.src = this.url + '?probe=' + Date.now();
+    }, 30000);
+  },
+
+  pollFrame() {
+    if (!this.polling || !this.url) return;
+    const img = getPooledImage();
+    const src = this.snapUrl() + '?t=' + Date.now();
+
+    img.onload = () => {
+      img.onload = null;
+      img.onerror = null;
+      // Prova decodifica off-thread, fallback a draw diretto
+      const doDraw = (source) => {
+        this.drawFrame(this.ctx(), this.canvas(), source);
+        if (source.close) source.close(); // chiudi ImageBitmap
+        if (!this.canvas().classList.contains('visible')) {
+          this.canvas().style.transition = 'none';
+          this.canvas().classList.add('visible');
+        }
+        // Prossimo frame immediatamente
+        if (this.polling) requestAnimationFrame(() => this.pollFrame());
+      };
+
+      if (typeof createImageBitmap === 'function') {
+        createImageBitmap(img).then(doDraw).catch(() => doDraw(img));
+      } else {
+        doDraw(img);
+      }
+    };
+
+    img.onerror = () => {
+      img.onload = null;
+      img.onerror = null;
+      if (this.polling) this.timers.pollRetry = setTimeout(() => this.pollFrame(), 500);
+    };
+
+    img.src = src;
+  },
+
+  // === DISCONNECT ===
+  disconnect() {
+    this.clearAll();
+    this.url = null;
+    this.mode = null;
+    canvasA.classList.remove('visible');
+    canvasB.classList.remove('visible');
+    noSignal.style.display = 'flex';
+    this.setBadge('offline');
   }
-}, 5000);
+};
 
 // Ascolta camera attiva dalla regia
 onValue(ref(db, 'ark_regia/activeCamera'), (snap) => {
   const data = snap.val();
-  
   if (data && data.url) {
-    currentCameraUrl = data.url;
-    const baseUrl = data.url.split('?')[0];
-    mainVideo.src = baseUrl + '?t=' + Date.now();
-    mainVideo.style.display = 'block';
-    noSignal.style.display = 'none';
+    Engine.connect(data.url.split('?')[0]);
   } else {
-    currentCameraUrl = null;
-    mainVideo.style.display = 'none';
-    noSignal.style.display = 'flex';
+    Engine.disconnect();
   }
 });
-
-// Error handling per video
-mainVideo.onerror = function() {
-  this.style.opacity = '0.3';
-  setTimeout(() => {
-    if (currentCameraUrl) {
-      const baseUrl = currentCameraUrl.split('?')[0];
-      this.src = baseUrl + '?t=' + Date.now();
-    }
-  }, 2000);
-};
-mainVideo.onload = function() {
-  this.style.opacity = '1';
-};
 
 // ===== OVERLAY TOGGLE =====
 onValue(ref(db, 'ark_regia/showOverlay'), (snap) => {
