@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>📋 ARK Games - Giudice</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation}
+html{height:-webkit-fill-available}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh;min-height:-webkit-fill-available;overflow-x:hidden;touch-action:manipulation}
+button{touch-action:manipulation}
+
+/* Login */
+.login{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login h2{margin-bottom:24px}
+.pin-input{font-size:32px;text-align:center;letter-spacing:12px;width:200px;padding:16px;background:#111;border:2px solid #333;border-radius:12px;color:#FF6B35}
+.pin-input:focus{outline:none;border-color:#FF6B35}
+
+/* Judge Main */
+.judge-main{display:none;flex-direction:column;height:100vh;height:100dvh;height:-webkit-fill-available;max-height:100vh;overflow-y:auto}
+.judge-header{padding:12px 16px;background:#1a1a1a;border-bottom:1px solid #2a2a2a;display:flex;justify-content:space-between;align-items:center}
+.judge-header .name{font-weight:600;font-size:16px}
+.judge-header .logout{color:#888;cursor:pointer;font-size:13px}
+
+/* Select screens */
+.select-screen{flex:1;padding:16px;overflow-y:auto}
+.select-screen h3{margin-bottom:16px;color:#888}
+.select-item{padding:16px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.select-item:active{transform:scale(.97);border-color:#FF6B35}
+.select-item .num{color:#FF6B35;font-weight:700;font-size:18px}
+.select-item .cat{font-size:12px;color:#888}
+
+/* Scoring Screen */
+.scoring{display:none;flex:1;flex-direction:column}
+.scoring-header{padding:16px;background:#111;text-align:center}
+.scoring-header .team-name{font-size:28px;font-weight:700}
+.scoring-header .team-members{color:#888;font-size:14px;margin-top:4px}
+.scoring-header .wod-name{color:#FF6B35;font-size:16px;margin-top:8px}
+.scoring-header .wod-type{color:#888;font-size:14px}
+
+/* Timer */
+.timer{text-align:center;padding:16px;font-size:48px;font-family:monospace;font-weight:700;color:#FF6B35}
+.timer.warning{color:#F7C948}
+.timer.danger{color:#c0392b}
+
+/* Rep Counter */
+.rep-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+.rep-count{font-size:120px;font-weight:800;line-height:1}
+.rep-label{color:#888;font-size:16px;margin-top:8px}
+.movement-current{color:#FF6B35;font-size:18px;margin-top:16px;text-align:center}
+
+/* Buttons */
+.btn-row{display:flex;gap:8px;padding:16px;padding-bottom:max(32px, env(safe-area-inset-bottom, 32px))}
+.rep-btn{flex:1;padding:24px;border:none;border-radius:16px;font-size:24px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:manipulation}
+.rep-btn:active{transform:scale(.95)}
+.btn-rep{background:#2ecc71;color:#fff;flex:3}
+.btn-norep{background:#c0392b;color:#fff;flex:1}
+.btn-undo{background:#333;color:#fff;flex:1}
+.btn-submit{background:#FF6B35;color:#fff;flex:2}
+
+/* Result */
+.result-screen{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:20px;text-align:center}
+.result-score{font-size:64px;font-weight:800;color:#FF6B35;margin:16px 0}
+
+.hidden{display:none}
+.tag{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600}
+.tag-scaled{background:#3498db22;color:#3498db}
+.tag-experience{background:#2ecc7122;color:#2ecc71}
+
+/* Timer Overlay */
+.timer-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;z-index:1000;display:none;flex-direction:column;align-items:center;justify-content:center}
+.timer-overlay.show{display:flex}
+.timer-overlay .countdown-num{font-size:200px;font-weight:900;color:#fff;font-family:monospace;animation:pulse .5s ease-in-out}
+.timer-overlay .countdown-go{font-size:120px;font-weight:900;color:#2ecc71;animation:pulse .3s ease-in-out}
+.timer-overlay .wod-name{color:#FF6B35;font-size:24px;margin-bottom:20px}
+.timer-overlay .timer-stopped{font-size:32px;color:#c0392b}
+@keyframes pulse{0%{transform:scale(0.5);opacity:0}50%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+
+/* Sync Timer Bar */
+.sync-timer-bar{background:#1a1a1a;padding:12px;text-align:center;border-bottom:1px solid #2a2a2a}
+.sync-timer-bar .time{font-size:28px;font-family:monospace;font-weight:700;color:#FF6B35}
+.sync-timer-bar .label{font-size:12px;color:#888}
+.sync-timer-bar.cap-reached .time{color:#c0392b}
+
+/* Lane Selection */
+.lane-select{padding:20px;text-align:center}
+.lane-select h3{margin-bottom:16px;color:#888}
+.lane-buttons{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:300px;margin:0 auto}
+.lane-btn{padding:24px;background:#1a1a1a;border:2px solid #2a2a2a;border-radius:12px;font-size:24px;font-weight:700;cursor:pointer;transition:all .2s}
+.lane-btn:active{transform:scale(.95)}
+.lane-btn.available{border-color:#2ecc71;color:#2ecc71}
+.lane-btn.available:hover{background:#2ecc7122}
+.lane-btn.occupied{border-color:#c0392b;color:#666;cursor:not-allowed}
+.lane-btn .lane-num{font-size:32px;display:block}
+.lane-btn .lane-status{font-size:12px;margin-top:4px}
+
+/* Waiting Screen */
+.waiting-screen{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:20px;text-align:center}
+.waiting-screen.show{display:flex}
+.waiting-screen .lane-badge{background:#2ecc71;color:#fff;padding:8px 24px;border-radius:20px;font-size:18px;font-weight:700;margin-bottom:20px}
+.waiting-screen h2{margin-bottom:12px}
+.waiting-screen p{color:#888}
+.waiting-spinner{width:60px;height:60px;border:4px solid #2a2a2a;border-top-color:#FF6B35;border-radius:50%;animation:spin 1s linear infinite;margin:24px 0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Team Confirm Screen */
+.team-confirm{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:20px;text-align:center}
+.team-confirm.show{display:flex}
+.team-confirm .lane-badge{background:#FF6B35;color:#fff;padding:6px 20px;border-radius:16px;font-size:14px;font-weight:600;margin-bottom:16px}
+.team-confirm .team-number{font-size:48px;font-weight:900;color:#FF6B35;margin-bottom:8px}
+.team-confirm .team-name{font-size:36px;font-weight:700;margin-bottom:8px}
+.team-confirm .team-members{font-size:18px;color:#888;margin-bottom:24px}
+.team-confirm .confirm-buttons{display:flex;gap:16px;width:100%;max-width:400px}
+.team-confirm .btn-present{flex:1;padding:20px;background:#2ecc71;color:#fff;border:none;border-radius:12px;font-size:20px;font-weight:700;cursor:pointer}
+.team-confirm .btn-absent{flex:1;padding:20px;background:#c0392b;color:#fff;border:none;border-radius:12px;font-size:20px;font-weight:700;cursor:pointer}
+.team-confirm .btn-present:active,.team-confirm .btn-absent:active{transform:scale(.95)}
+.team-confirm .waiting-assignment{color:#888;font-size:18px}
+
+/* Team Selection Options */
+.team-option{background:#1a1a1a;border:2px solid #333;border-radius:12px;padding:16px;margin:8px 0;cursor:pointer;transition:all .2s}
+.team-option:active{transform:scale(.97);border-color:#FF6B35;background:#FF6B3522}
+.team-option-num{font-size:14px;color:#FF6B35;font-weight:700}
+.team-option-name{font-size:20px;font-weight:700;margin:4px 0}
+.team-option-members{font-size:14px;color:#888}
+</style>
+</head>
+<body>
+
+<!-- Timer Overlay -->
+<div class="timer-overlay" id="timerOverlay">
+  <div class="wod-name" id="overlayWodName"></div>
+  <div id="overlayContent"></div>
+</div>
+
+<!-- LOGIN -->
+<div class="login" id="loginScreen">
+  <a href="/" style="display:inline-block;margin-bottom:12px;padding:8px 16px;background:#FF6B35;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">🏠 Home</a>
+  <h2>📋 Giudice</h2>
+  <p style="color:#888;margin-bottom:16px">Inserisci il tuo PIN</p>
+  <input class="pin-input" id="pinInput" type="tel" maxlength="4" placeholder="____" autofocus>
+  <p id="pinError" style="color:#c0392b;margin-top:12px;display:none">PIN non valido</p>
+</div>
+
+<!-- JUDGE MAIN -->
+<div class="judge-main" id="judgeMain">
+  <div class="judge-header">
+    <div>
+      <span class="name" id="judgeName">Giudice</span>
+    </div>
+    <span class="logout" onclick="logout()">🚪 Esci</span>
+  </div>
+  
+  <!-- Workout Select -->
+  <div class="select-screen" id="wodSelect">
+    <h3>Seleziona Workout</h3>
+    <div id="wodList"></div>
+  </div>
+  
+  <!-- Lane Select -->
+  <div class="select-screen hidden" id="laneSelect">
+    <h3>Scegli la tua Lane</h3>
+    <div class="lane-buttons" id="laneButtons"></div>
+    <p style="margin-top:16px;color:#888;font-size:14px">Il workout viene impostato dall'admin</p>
+  </div>
+  
+  <!-- Waiting Screen with countdown between heats -->
+  <div class="waiting-screen" id="waitingScreen" style="display:none">
+    <div class="lane-badge" id="waitingLane">LANE 1</div>
+    <h2 id="waitingTitle">⏳ Prossima Heat tra:</h2>
+    <div id="waitingCountdown" style="font-size:72px;font-weight:900;color:#FF6B35;font-family:monospace;margin:20px 0">--:--</div>
+    <p id="waitingMessage" style="color:#888">Preparati per il prossimo team</p>
+    <p style="margin-top:8px;font-size:14px" id="waitingWod"></p>
+    <button class="rep-btn" style="background:#333;color:#888;margin-top:24px;max-width:200px" onclick="leaveLane()">← Cambia Lane</button>
+  </div>
+  
+  <!-- Team Selection Screen - JUDGE CHOOSES TEAM -->
+  <div class="waiting-screen" id="teamSelectScreen" style="display:none">
+    <div class="lane-badge" id="selectLane">LANE 1</div>
+    <h2>👆 Scegli il tuo Team</h2>
+    <p style="color:#888;margin-bottom:16px" id="selectWod"></p>
+    <div id="teamList" style="max-height:50vh;overflow-y:auto;width:100%;max-width:400px"></div>
+    <button class="rep-btn" style="background:#333;color:#888;margin-top:24px;max-width:200px" onclick="leaveLane()">← Cambia Lane</button>
+  </div>
+  
+  <!-- Team Confirm Screen -->
+  <div class="team-confirm" id="teamConfirm">
+    <div class="lane-badge" id="confirmLane">LANE 1</div>
+    <div class="team-number" id="confirmNumber">#1</div>
+    <div class="team-name" id="confirmTeamName">🦁 I Leoni</div>
+    <div class="team-members" id="confirmMembers">Mario Rossi & Lucia Bianchi</div>
+    <p style="color:#888;margin-bottom:24px">Conferma che il team è presente</p>
+    <div class="confirm-buttons">
+      <button class="btn-present" onclick="confirmTeam(true)">✅ PRESENTE</button>
+      <button class="btn-absent" onclick="confirmTeam(false)">❌ ASSENTE</button>
+    </div>
+  </div>
+  
+  <!-- Ready Screen (dopo conferma, attesa START) -->
+  <div class="waiting-screen" id="readyScreen">
+    <div class="lane-badge" style="background:#2ecc71" id="readyLane">LANE 1</div>
+    <div style="font-size:64px;margin-bottom:16px">✅</div>
+    <h2 id="readyTeamName">🦁 I Leoni</h2>
+    <p id="readyTeamMembers" style="color:#888;margin-bottom:8px">Mario Rossi & Lucia Bianchi</p>
+    <p style="color:#2ecc71;font-weight:600">CONFERMATO</p>
+    <div class="waiting-spinner" style="border-top-color:#2ecc71"></div>
+    <p>In attesa che l'admin avvii il workout...</p>
+  </div>
+  
+  <!-- Scoring -->
+  <div class="scoring" id="scoringScreen">
+    <div class="scoring-header">
+      <div class="team-name" id="scoringTeam">-</div>
+      <div class="team-members" id="scoringMembers">-</div>
+      <div class="wod-name" id="scoringWod">-</div>
+      <div class="wod-type" id="scoringType">-</div>
+    </div>
+    
+    <div class="timer" id="timer">00:00</div>
+    
+    <div class="rep-area">
+      <div class="rep-count" id="repCount">0</div>
+      <div class="rep-label" id="repLabel">REPS</div>
+      <div class="movement-current" id="currentMovement"></div>
+    </div>
+    
+    <div class="btn-row">
+      <button class="rep-btn btn-undo" onclick="undoRep()">↩️</button>
+      <button class="rep-btn btn-rep" onclick="addRep()">+1 REP</button>
+      <button class="rep-btn btn-norep" onclick="noRep()">NO REP</button>
+    </div>
+    <div class="btn-row">
+      <button class="rep-btn btn-submit" onclick="submitScore()">✅ SUBMIT</button>
+      <button class="rep-btn" style="background:#333;color:#888;flex:1" onclick="backToWaiting()">← Indietro</button>
+    </div>
+  </div>
+  
+  <!-- Result -->
+  <div class="result-screen" id="resultScreen">
+    <div style="font-size:48px">✅</div>
+    <h2>Score Registrato!</h2>
+    <div class="result-score" id="resultScore">-</div>
+    <p style="color:#888" id="resultDetails"></p>
+    <button class="rep-btn btn-rep" style="margin-top:24px;max-width:300px" onclick="nextTeam()">Prossimo Team →</button>
+  </div>
+</div>
+
+<script type="module">
+import { db, ref, set, get, onValue, PATHS, getSyncedTime, syncClock, resyncClock } from './firebase-config.js';
+
+// Sync clock on page load
+syncClock();
+
+let judge = null;
+let currentWod = null;
+let currentTeam = null;
+let reps = 0;
+let noReps = 0;
+let timerInterval = null;
+let timerSeconds = 0;
+let timerRunning = false;
+let movements = [];
+
+// ========== LOGIN ==========
+document.getElementById('pinInput').addEventListener('input', async function() {
+  if (this.value.length === 4) {
+    const snap = await get(ref(db, PATHS.judges));
+    const judges = snap.val();
+    if (!judges) return showPinError();
+    
+    const found = Object.values(judges).find(j => j.pin === this.value);
+    if (found) {
+      judge = found;
+      document.getElementById('judgeName').textContent = '📋 ' + judge.name;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('judgeMain').style.display = 'flex';
+      // Skip WOD selection - go directly to lane selection
+      document.getElementById('wodSelect').classList.add('hidden');
+      document.getElementById('laneSelect').classList.remove('hidden');
+      loadLanes();
+      loadCurrentWodFromTimer();
+    } else {
+      showPinError();
+    }
+  }
+});
+
+function showPinError() {
+  document.getElementById('pinError').style.display = 'block';
+  document.getElementById('pinInput').value = '';
+  setTimeout(() => document.getElementById('pinError').style.display = 'none', 2000);
+}
+
+// ========== WORKOUT FROM TIMER (auto) ==========
+let workoutsCache = {};
+
+// Load WOD from admin's active timer - NO manual selection
+function loadCurrentWodFromTimer() {
+  // Cache all workouts
+  onValue(ref(db, PATHS.workouts), (snap) => {
+    workoutsCache = snap.val() || {};
+  });
+  
+  // Listen for active workout from admin/timeline
+  onValue(ref(db, PATHS.timer), (snap) => {
+    const timer = snap.val();
+    if (timer && timer.activeWorkout && workoutsCache[timer.activeWorkout]) {
+      const wod = workoutsCache[timer.activeWorkout];
+      currentWod = wod;
+      movements = wod.movements || [];
+    }
+  });
+}
+
+let selectedLane = null;
+let lanesData = {};
+
+// ========== LANE MANAGEMENT ==========
+function loadLanes() {
+  onValue(ref(db, PATHS.timer + '/readyJudges'), (snap) => {
+    lanesData = snap.val() || {};
+    renderLanes();
+  });
+}
+
+function renderLanes() {
+  const container = document.getElementById('laneButtons');
+  container.innerHTML = '';
+  
+  for (let lane = 1; lane <= 3; lane++) {
+    const occupant = Object.values(lanesData).find(j => j.lane === lane);
+    const isOccupied = occupant && occupant.judgeId !== judge.id;
+    const isMe = occupant && occupant.judgeId === judge.id;
+    
+    const btn = document.createElement('div');
+    btn.className = 'lane-btn ' + (isOccupied ? 'occupied' : 'available');
+    btn.innerHTML = `
+      <span class="lane-num">LANE ${lane}</span>
+      <span class="lane-status">${isMe ? '✅ Tu' : (isOccupied ? occupant.name : '✅ Libera')}</span>
+    `;
+    
+    if (!isOccupied) {
+      btn.onclick = () => selectLane(lane);
+    }
+    
+    container.appendChild(btn);
+  }
+}
+
+let assignedTeam = null;
+let laneTeamListener = null;
+
+window.selectLane = async function(lane) {
+  selectedLane = lane;
+  
+  // Safety check - if no WOD active yet, still allow lane selection
+  const wodId = currentWod?.id || 'pending';
+  const wodName = currentWod?.name || 'In attesa WOD';
+  
+  // Register on Firebase
+  await set(ref(db, PATHS.timer + '/readyJudges/' + judge.id), {
+    judgeId: judge.id,
+    name: judge.name,
+    lane: lane,
+    wodId: wodId,
+    wodName: wodName,
+    readyAt: Date.now()
+  });
+  
+  // Initialize lane status
+  await set(ref(db, PATHS.timer + '/laneStatus/' + lane), {
+    status: 'waiting',
+    judgeId: judge.id,
+    judgeName: judge.name
+  });
+  
+  // Show TEAM SELECTION screen (not waiting)
+  document.getElementById('laneSelect').classList.add('hidden');
+  document.getElementById('teamSelectScreen').classList.add('show');
+  document.getElementById('selectLane').textContent = 'LANE ' + lane;
+  document.getElementById('selectWod').textContent = wodName;
+  
+  // Listen for available teams in current heat - REAL TIME
+  loadAvailableTeams();
+  
+  // Listen for changes to currentHeat AND laneAthletes (when other judges select teams)
+  onValue(ref(db, PATHS.timer + '/currentHeat'), () => {
+    if (document.getElementById('teamSelectScreen').classList.contains('show')) {
+      loadAvailableTeams();
+    }
+  });
+  
+  // REAL TIME: Update when another judge selects a team OR admin assigns a team
+  onValue(ref(db, PATHS.timer + '/laneAthletes'), (snap) => {
+    const laneData = snap.val() || {};
+    const myLaneData = laneData[selectedLane];
+    
+    // If admin RESET lanes (new heat coming), prepare for new team
+    if (!myLaneData && assignedTeam) {
+      assignedTeam = null;
+      currentTeam = null;
+      // Hide all screens and wait for new assignment
+      document.getElementById('teamConfirm').classList.remove('show');
+      document.getElementById('readyScreen').classList.remove('show');
+      document.getElementById('scoringScreen').style.display = 'none';
+      document.getElementById('teamSelectScreen').classList.add('show');
+      loadAvailableTeams();
+      return;
+    }
+    
+    // If admin assigned a team to MY lane, show confirmation
+    if (myLaneData && myLaneData.athleteId && (!assignedTeam || assignedTeam.athleteId !== myLaneData.athleteId)) {
+      assignedTeam = {
+        id: myLaneData.athleteId,
+        athleteId: myLaneData.athleteId,
+        athleteName: myLaneData.athleteName,
+        teamName: myLaneData.teamName,
+        member1: myLaneData.member1,
+        member2: myLaneData.member2,
+        number: myLaneData.athleteNumber,
+        category: myLaneData.category
+      };
+      document.getElementById('teamSelectScreen').classList.remove('show');
+      document.getElementById('readyScreen').classList.remove('show');
+      document.getElementById('scoringScreen').style.display = 'none';
+      showTeamConfirm({
+        ...assignedTeam,
+        athleteNumber: myLaneData.athleteNumber
+      });
+    } else if (document.getElementById('teamSelectScreen').classList.contains('show')) {
+      loadAvailableTeams();
+    }
+  });
+}
+
+async function loadAvailableTeams() {
+  const [heatSnap, athletesSnap, assignedSnap] = await Promise.all([
+    get(ref(db, PATHS.timer + '/currentHeat')),
+    get(ref(db, PATHS.athletes)),
+    get(ref(db, PATHS.timer + '/laneAthletes'))
+  ]);
+  
+  const heatData = heatSnap.val();
+  const allAthletes = athletesSnap.val() || {};
+  const assignedTeams = assignedSnap.val() || {};
+  
+  // Get already assigned team IDs
+  const assignedIds = Object.values(assignedTeams).map(t => t?.athleteId).filter(Boolean);
+  
+  const container = document.getElementById('teamList');
+  
+  // If no heat defined, show teams from current WOD category
+  let availableTeams = [];
+  
+  if (heatData && heatData.teams) {
+    // Use teams from currentHeat
+    availableTeams = heatData.teams.filter(t => !assignedIds.includes(t.id));
+  } else {
+    // Fallback: show all teams from WOD category not yet assigned
+    const wodCategory = currentWod.categories?.[0];
+    availableTeams = Object.values(allAthletes)
+      .filter(t => t.category === wodCategory && !assignedIds.includes(t.id))
+      .sort((a, b) => (a.number || 999) - (b.number || 999));
+  }
+  
+  if (availableTeams.length === 0) {
+    const wodCat = currentWod?.categories?.[0] || 'N/A';
+    const totalTeams = Object.keys(allAthletes).length;
+    const catTeams = Object.values(allAthletes).filter(t => t.category === wodCat).length;
+    container.innerHTML = `<p style="color:#888;text-align:center;padding:20px">
+      Nessun team disponibile.<br>
+      <span style="font-size:12px">WOD: ${currentWod?.name || 'N/A'} | Categoria: ${wodCat}<br>
+      Team totali: ${totalTeams} | Team ${wodCat}: ${catTeams}<br>
+      Già assegnati: ${assignedIds.length}</span>
+    </p>`;
+    return;
+  }
+  
+  container.innerHTML = availableTeams.map(team => `
+    <div class="team-option" onclick="selectTeam('${team.id}')">
+      <div class="team-option-num">${team.number ? '#' + team.number : ''}</div>
+      <div class="team-option-name">${team.teamName || team.name}</div>
+      <div class="team-option-members">${team.member1 || ''} & ${team.member2 || ''}</div>
+    </div>
+  `).join('');
+}
+
+window.selectTeam = async function(teamId) {
+  const snap = await get(ref(db, PATHS.athletes + '/' + teamId));
+  const team = snap.val();
+  if (!team) return;
+  
+  // Assign this team to my lane
+  await set(ref(db, PATHS.timer + '/laneAthletes/' + selectedLane), {
+    athleteId: team.id,
+    athleteName: team.teamName || team.name,
+    teamName: team.teamName,
+    member1: team.member1,
+    member2: team.member2,
+    athleteNumber: team.number || null,
+    category: team.category,
+    wodId: currentWod.id,
+    selectedBy: judge.id
+  });
+  
+  assignedTeam = team;
+  
+  // Go to confirmation
+  document.getElementById('teamSelectScreen').classList.remove('show');
+  showTeamConfirm({
+    ...team,
+    athleteNumber: team.number
+  });
+}
+
+function showTeamConfirm(team) {
+  document.getElementById('waitingScreen').classList.remove('show');
+  document.getElementById('readyScreen').classList.remove('show');
+  document.getElementById('teamConfirm').classList.add('show');
+  document.getElementById('confirmLane').textContent = 'LANE ' + selectedLane;
+  document.getElementById('confirmNumber').textContent = team.athleteNumber ? '#' + team.athleteNumber : '';
+  document.getElementById('confirmTeamName').textContent = team.teamName || team.athleteName;
+  document.getElementById('confirmMembers').textContent = (team.member1 || '') + ' & ' + (team.member2 || '');
+}
+
+window.confirmTeam = async function(isPresent) {
+  if (!assignedTeam) return;
+  
+  await set(ref(db, PATHS.timer + '/laneStatus/' + selectedLane), {
+    status: isPresent ? 'confirmed' : 'absent',
+    judgeId: judge.id,
+    judgeName: judge.name,
+    athleteId: assignedTeam.athleteId,
+    athleteName: assignedTeam.athleteName,
+    teamName: assignedTeam.teamName,
+    confirmedAt: Date.now()
+  });
+  
+  document.getElementById('teamConfirm').classList.remove('show');
+  
+  if (isPresent) {
+    // Show ready screen
+    document.getElementById('readyScreen').classList.add('show');
+    document.getElementById('readyLane').textContent = 'LANE ' + selectedLane;
+    document.getElementById('readyTeamName').textContent = assignedTeam.teamName || assignedTeam.athleteName;
+    document.getElementById('readyTeamMembers').textContent = (assignedTeam.member1 || '') + ' & ' + (assignedTeam.member2 || '');
+    currentTeam = assignedTeam;
+  } else {
+    // Go back to waiting for new assignment
+    document.getElementById('waitingScreen').classList.add('show');
+    assignedTeam = null;
+  }
+}
+
+window.leaveLane = async function() {
+  if (judge && selectedLane) {
+    await set(ref(db, PATHS.timer + '/readyJudges/' + judge.id), null);
+    await set(ref(db, PATHS.timer + '/laneStatus/' + selectedLane), null);
+  }
+  selectedLane = null;
+  assignedTeam = null;
+  document.getElementById('waitingScreen').classList.remove('show');
+  document.getElementById('teamConfirm').classList.remove('show');
+  document.getElementById('readyScreen').classList.remove('show');
+  document.getElementById('laneSelect').classList.remove('hidden');
+}
+
+// Remove judge from readyJudges on page unload
+window.addEventListener('beforeunload', () => {
+  if (judge && selectedLane) {
+    // Use fetch with keepalive for reliable cleanup
+    const url1 = `https://copilota-6d94a-default-rtdb.firebaseio.com/${PATHS.timer}/readyJudges/${judge.id}.json`;
+    const url2 = `https://copilota-6d94a-default-rtdb.firebaseio.com/${PATHS.timer}/laneStatus/${selectedLane}.json`;
+    fetch(url1, { method: 'DELETE', keepalive: true }).catch(() => {});
+    fetch(url2, { method: 'DELETE', keepalive: true }).catch(() => {});
+  }
+});
+
+// Also handle visibility change (phone goes to sleep/switches app)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && judge && selectedLane) {
+    // Don't remove immediately - just log. Remove only on actual page close
+    console.log('Judge page hidden, lane:', selectedLane);
+  }
+});
+
+window.goToScoring = function() {
+  document.getElementById('readyScreen').classList.remove('show');
+  document.getElementById('scoringScreen').style.display = 'flex';
+  document.getElementById('scoringTeam').textContent = currentTeam.teamName || currentTeam.athleteName;
+  document.getElementById('scoringMembers').textContent = (currentTeam.member1 || '') + ' & ' + (currentTeam.member2 || '');
+  document.getElementById('scoringWod').textContent = currentWod.name;
+  
+  // Reset auto-submit flag for new workout
+  window._autoSubmitted = false;
+  
+  // Show target reps for For Time workouts
+  if (currentWod.type === 'For Time' && currentWod.totalReps) {
+    document.getElementById('scoringType').textContent = currentWod.type + ' — ' + currentWod.duration + ' min — 🎯 ' + currentWod.totalReps + ' reps';
+    document.getElementById('repLabel').textContent = 'REPS (su ' + currentWod.totalReps + ')';
+  } else {
+    document.getElementById('scoringType').textContent = currentWod.type + ' — ' + currentWod.duration + ' min';
+    document.getElementById('repLabel').textContent = 'REPS';
+  }
+  
+  reps = 0;
+  noReps = 0;
+  timerSeconds = 0;
+  document.getElementById('repCount').textContent = '0';
+  updateMovement();
+}
+
+window.backToWaiting = function() {
+  if (confirm('Tornare indietro? I dati non salvati andranno persi.')) {
+    document.getElementById('scoringScreen').style.display = 'none';
+    document.getElementById('waitingScreen').classList.add('show');
+    assignedTeam = null;
+    currentTeam = null;
+  }
+}
+
+// ========== REP COUNTER ==========
+window.addRep = async function() {
+  reps++;
+  document.getElementById('repCount').textContent = reps;
+  document.getElementById('repCount').style.transform = 'scale(1.1)';
+  setTimeout(() => document.getElementById('repCount').style.transform = 'scale(1)', 100);
+  updateMovement();
+  // Haptic feedback
+  if (navigator.vibrate) navigator.vibrate(50);
+  // Save live score to Firebase for TV display
+  if (selectedLane && currentTeam) {
+    await set(ref(db, PATHS.timer + '/liveScores/' + selectedLane), {
+      reps: reps,
+      noReps: noReps,
+      teamName: currentTeam.teamName || currentTeam.athleteName,
+      teamId: currentTeam.athleteId,
+      timestamp: Date.now()
+    });
+  }
+  
+  // AUTO-SUBMIT: For Time workouts, auto-submit when total reps reached
+  if (currentWod && currentWod.type === 'For Time' && currentWod.totalReps) {
+    if (reps >= currentWod.totalReps) {
+      // Vibrate celebration pattern
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+      // Auto submit with short delay for visual feedback
+      setTimeout(() => {
+        submitScore(true); // true = auto-submitted
+      }, 300);
+    }
+  }
+}
+
+window.noRep = async function() {
+  noReps++;
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+  // Save live score to Firebase for TV display
+  if (selectedLane && currentTeam) {
+    await set(ref(db, PATHS.timer + '/liveScores/' + selectedLane), {
+      reps: reps,
+      noReps: noReps,
+      teamName: currentTeam.teamName || currentTeam.athleteName,
+      teamId: currentTeam.athleteId,
+      timestamp: Date.now()
+    });
+  }
+}
+
+window.undoRep = function() {
+  if (reps > 0) {
+    reps--;
+    document.getElementById('repCount').textContent = reps;
+    updateMovement();
+  }
+}
+
+function updateMovement() {
+  if (movements.length === 0) return;
+  // Parse movements to find current one based on rep count
+  let totalReps = 0;
+  let round = 1;
+  let display = '';
+  
+  // Simple parsing: assume each movement has a number at the start
+  const parsed = movements.map(m => {
+    const match = m.match(/^(\d+)/);
+    return { text: m, count: match ? parseInt(match[1]) : 1 };
+  });
+  
+  let remaining = reps;
+  const totalPerRound = parsed.reduce((s, m) => s + m.count, 0);
+  round = Math.floor(remaining / totalPerRound) + 1;
+  remaining = remaining % totalPerRound;
+  
+  let currentIdx = 0;
+  for (let i = 0; i < parsed.length; i++) {
+    if (remaining < parsed[i].count) {
+      currentIdx = i;
+      break;
+    }
+    remaining -= parsed[i].count;
+    currentIdx = i + 1;
+  }
+  
+  if (currentIdx < parsed.length) {
+    display = `Round ${round} — ${parsed[currentIdx].text} (${remaining}/${parsed[currentIdx].count})`;
+  } else {
+    display = `Round ${round} completato!`;
+  }
+  
+  document.getElementById('currentMovement').textContent = display;
+}
+
+// ========== SUBMIT ==========
+window.submitScore = async function(auto = false) {
+  const teamName = currentTeam.teamName || currentTeam.athleteName;
+  const teamId = currentTeam.athleteId;
+  
+  // Skip confirmation for auto-submit (For Time completed)
+  if (!auto && !confirm(`Confermi score per ${teamName}?\n${reps} reps | ${noReps} no-rep`)) return;
+  
+  const score = {
+    athleteId: teamId,
+    athleteName: currentTeam.athleteName,
+    teamName: currentTeam.teamName,
+    member1: currentTeam.member1,
+    member2: currentTeam.member2,
+    category: currentTeam.category,
+    workoutId: currentWod.id,
+    workoutName: currentWod.name,
+    workoutType: currentWod.type,
+    reps: reps,
+    noReps: noReps,
+    time: timerSeconds,
+    judgeId: judge.id,
+    judgeName: judge.name,
+    lane: selectedLane,
+    submittedAt: Date.now()
+  };
+  
+  // For Time: score is the time. For AMRAP: score is reps
+  if (currentWod.type === 'For Time') {
+    score.finalTime = timerSeconds;
+  }
+  
+  await set(ref(db, PATHS.scores + '/' + teamId + '/' + currentWod.id), score);
+  
+  // Mark as submitted on live scores for TV display
+  if (selectedLane) {
+    await set(ref(db, PATHS.timer + '/liveScores/' + selectedLane + '/submitted'), true);
+  }
+  
+  // Show result
+  document.getElementById('scoringScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'flex';
+  document.getElementById('resultScore').textContent = 
+    currentWod.type === 'For Time' 
+      ? `${Math.floor(timerSeconds/60)}:${String(timerSeconds%60).padStart(2,'0')}`
+      : `${reps} REPS`;
+  document.getElementById('resultDetails').textContent = 
+    `${teamName} — ${currentWod.name} | No-rep: ${noReps} | Giudice: ${judge.name}`;
+}
+
+window.nextTeam = function() {
+  document.getElementById('resultScreen').style.display = 'none';
+  // Torna alla schermata di attesa per nuovo team
+  document.getElementById('waitingScreen').classList.add('show');
+  assignedTeam = null;
+  currentTeam = null;
+  reps = 0;
+  noReps = 0;
+  timerSeconds = 0;
+}
+
+// ========== BETWEEN HEATS COUNTDOWN ==========
+let heatCountdownInterval = null;
+let isTimelineActive = false;
+let nextHeatAtCache = null;
+
+// Listen for auto mode status
+onValue(ref(db, PATHS.timer + '/autoModeActive'), (snap) => {
+  isTimelineActive = snap.val() === true;
+  updateWaitingScreen();
+});
+
+// Listen for next heat timestamp
+onValue(ref(db, PATHS.timer + '/nextHeatAt'), (snap) => {
+  nextHeatAtCache = snap.val();
+  updateWaitingScreen();
+});
+
+function updateWaitingScreen() {
+  const countdownEl = document.getElementById('waitingCountdown');
+  const titleEl = document.getElementById('waitingTitle');
+  const msgEl = document.getElementById('waitingMessage');
+  
+  if (heatCountdownInterval) {
+    clearInterval(heatCountdownInterval);
+    heatCountdownInterval = null;
+  }
+  
+  // Timeline not active
+  if (!isTimelineActive) {
+    countdownEl.textContent = '⏸️';
+    countdownEl.style.fontSize = '72px';
+    titleEl.textContent = '📋 Timeline non avviata';
+    msgEl.textContent = 'Attendi che l\'admin avvii la modalità automatica';
+    return;
+  }
+  
+  // Timeline active but no next heat time (between assignment)
+  if (!nextHeatAtCache) {
+    countdownEl.textContent = '...';
+    countdownEl.style.fontSize = '72px';
+    titleEl.textContent = '🔔 Team in arrivo!';
+    msgEl.textContent = 'Attendi assegnazione team...';
+    return;
+  }
+  
+  // Timeline active with countdown
+  countdownEl.style.fontSize = '72px';
+  
+  function updateHeatCountdown() {
+    const now = getSyncedTime();
+    const remaining = Math.max(0, Math.ceil((nextHeatAtCache - now) / 1000));
+    
+    if (remaining > 0) {
+      const mins = Math.floor(remaining / 60);
+      const secs = remaining % 60;
+      countdownEl.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      titleEl.textContent = '⏳ Prossima Heat tra:';
+      msgEl.textContent = 'Riorganizzati per il prossimo team';
+    } else {
+      countdownEl.textContent = '00:00';
+      titleEl.textContent = '🔔 Team in arrivo!';
+      msgEl.textContent = 'Attendi assegnazione team...';
+    }
+  }
+  
+  updateHeatCountdown();
+  heatCountdownInterval = setInterval(updateHeatCountdown, 1000);
+}
+
+// ========== LOGOUT ==========
+window.logout = function() {
+  judge = null;
+  currentWod = null;
+  currentTeam = null;
+  document.getElementById('judgeMain').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('pinInput').value = '';
+  document.getElementById('scoringScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('wodSelect').classList.remove('hidden');
+}
+
+// ========== AUDIO FUNCTIONS ==========
+let audioCtx = null;
+
+function playBeep(frequency = 800, duration = 100) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.frequency.value = frequency;
+    oscillator.type = 'sine';
+    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration / 1000);
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + duration / 1000);
+  } catch (e) { console.log('Audio error:', e); }
+}
+
+function speakNumber(num) {
+  try {
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(num === 'GO' ? 'VIA!' : String(num));
+      u.lang = 'it-IT';
+      u.rate = 1.2;
+      u.pitch = 0.8;
+      u.volume = 1;
+      speechSynthesis.speak(u);
+    }
+  } catch (e) { console.log('Speech error:', e); }
+}
+
+// ========== SYNCHRONIZED TIMER ==========
+let syncTimerInterval = null;
+let lastCountdown = -1;
+let lastTimerStatus = null;
+
+onValue(ref(db, PATHS.timer), (snap) => {
+  const timer = snap.val();
+  const overlay = document.getElementById('timerOverlay');
+  const overlayContent = document.getElementById('overlayContent');
+  const wodNameEl = document.getElementById('overlayWodName');
+  
+  if (syncTimerInterval) { clearInterval(syncTimerInterval); syncTimerInterval = null; }
+  
+  if (!timer) {
+    overlay.classList.remove('show');
+    lastTimerStatus = null;
+    return;
+  }
+  
+  wodNameEl.textContent = timer.wodName || 'Workout';
+  
+  // Only show "TIMER FERMATO" if status CHANGED from running/countdown to stopped
+  if (timer.status === 'stopped') {
+    if (lastTimerStatus === 'running' || lastTimerStatus === 'countdown') {
+      overlay.classList.add('show');
+      overlayContent.innerHTML = '<div class="timer-stopped">⏹ TIMER FERMATO</div>';
+      setTimeout(() => overlay.classList.remove('show'), 2000);
+    }
+    lastTimerStatus = 'stopped';
+    return;
+  }
+  
+  // Track current status
+  lastTimerStatus = timer.status;
+  
+  // Resync clock when countdown starts for maximum accuracy
+  if (timer.status === 'countdown' && lastTimerStatus !== 'countdown') {
+    resyncClock().then(() => console.log('Clock resynced for countdown'));
+  }
+  
+  function updateSyncTimer() {
+    const now = getSyncedTime();
+    
+    if (timer.status === 'countdown') {
+      const remaining = Math.ceil((timer.startAt - now) / 1000);
+      
+      if (remaining > 0 && remaining <= 10) {
+        overlay.classList.add('show');
+        if (remaining !== lastCountdown) {
+          lastCountdown = remaining;
+          overlayContent.innerHTML = `<div class="countdown-num">${remaining}</div>`;
+          // Audio: beep + voice
+          playBeep(800, 100);
+          speakNumber(remaining);
+          if (navigator.vibrate) navigator.vibrate(100);
+        }
+      } else if (remaining <= 0 && remaining > -1) {
+        if (lastCountdown !== 0) {
+          lastCountdown = 0;
+          overlayContent.innerHTML = '<div class="countdown-go">GO!</div>';
+          // Audio: long beep + voice
+          playBeep(1000, 500);
+          speakNumber('GO');
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+        }
+      } else if (remaining <= -1) {
+        overlay.classList.remove('show');
+        lastCountdown = -1;
+      }
+    } else if (timer.status === 'running') {
+      overlay.classList.remove('show');
+      
+      // If ready screen is showing, go to scoring
+      const readyScreen = document.getElementById('readyScreen');
+      if (readyScreen.classList.contains('show') && currentWod && currentWod.id === timer.activeWorkout) {
+        goToScoring();
+      }
+      
+      // Update sync timer bar if exists
+      const elapsed = Math.floor((now - timer.startAt) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      const timeStr = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      
+      // Update the local timer display with sync time
+      const timerEl = document.getElementById('timer');
+      if (timerEl && currentWod && currentWod.id === timer.activeWorkout) {
+        timerEl.textContent = timeStr;
+        timerSeconds = elapsed;
+        
+        // Check cap - AUTO SUBMIT when time cap reached
+        if (timer.cap && elapsed >= timer.cap * 60) {
+          timerEl.className = 'timer danger';
+          timerEl.textContent = 'TIME CAP!';
+          
+          // Auto-submit if not already submitted
+          if (currentTeam && !window._autoSubmitted) {
+            window._autoSubmitted = true;
+            console.log('TIME CAP - Auto submitting...');
+            setTimeout(() => {
+              if (document.getElementById('scoringScreen').style.display !== 'none') {
+                submitScore(true); // auto-submit
+              }
+            }, 2000); // 2 sec delay to let judge see TIME CAP
+          }
+        } else if (timer.duration && elapsed >= (timer.duration - 1) * 60) {
+          timerEl.className = 'timer warning';
+        }
+      }
+    }
+  }
+  
+  updateSyncTimer();
+  syncTimerInterval = setInterval(updateSyncTimer, 100);
+});
+</script>
+</body>
+</html>

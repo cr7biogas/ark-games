@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🏆 ARK Games - Leaderboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
+
+.header{background:linear-gradient(135deg,#1a1a1a,#0a0a0a);padding:20px;text-align:center;border-bottom:2px solid #FF6B35}
+.header h1{font-size:28px;background:linear-gradient(135deg,#FF6B35,#F7C948);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .comp-name{color:#888;font-size:14px;margin-top:4px}
+.header .theme{color:#FF6B35;font-size:12px;margin-top:4px}
+
+.tabs{display:flex;justify-content:center;gap:4px;padding:12px;background:#111;position:sticky;top:0;z-index:10}
+.tab{padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;border:1px solid #2a2a2a;background:#1a1a1a;transition:all .2s}
+.tab.active{border-color:#FF6B35;color:#FF6B35;background:#FF6B3511}
+.tab-open.active{border-color:#FF6B35;color:#FF6B35}
+.tab-scaled.active{border-color:#3498db;color:#3498db}
+.tab-experience.active{border-color:#2ecc71;color:#2ecc71}
+
+.board{padding:12px}
+
+/* Table */
+.lb-table{width:100%;border-collapse:collapse}
+.lb-table th{color:#888;font-size:12px;text-transform:uppercase;padding:8px 12px;text-align:left;border-bottom:1px solid #2a2a2a;position:sticky;top:52px;background:#0a0a0a}
+.lb-table td{padding:10px 12px;border-bottom:1px solid #1a1a1a;font-size:14px}
+.lb-table tr:hover{background:#1a1a1a}
+.lb-table tr.expandable{cursor:pointer}
+
+.rank{font-size:18px;font-weight:800;width:40px}
+.rank-1{color:#F7C948}
+.rank-2{color:#C0C0C0}
+.rank-3{color:#CD7F32}
+.team-cell{font-weight:600}
+.team-name{font-size:16px}
+.team-members{font-size:12px;color:#888;margin-top:2px;display:none}
+.team-members.show{display:block}
+.team-num{color:#FF6B35;font-size:12px;margin-right:4px}
+.score-cell{text-align:center;font-family:monospace;font-size:14px}
+.score-good{color:#2ecc71}
+.score-mid{color:#F7C948}
+.total-cell{font-weight:800;color:#FF6B35;font-size:16px;text-align:center}
+.wod-rank{font-size:10px;color:#888;display:block}
+
+.no-data{text-align:center;padding:60px 20px;color:#888}
+.no-data .big{font-size:48px;margin-bottom:16px}
+
+.auto-refresh{text-align:center;padding:8px;color:#555;font-size:11px}
+.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2ecc71;margin-right:4px;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.back{color:#888;text-decoration:none;font-size:14px;display:inline-block;padding:12px 16px}
+
+/* Live Timer Bar */
+.live-timer{background:linear-gradient(135deg,#1a1a1a,#111);padding:16px;text-align:center;border-bottom:2px solid #2ecc71;display:none}
+.live-timer.show{display:block}
+.live-timer .wod-name{color:#FF6B35;font-size:14px;margin-bottom:4px}
+.live-timer .time{font-size:48px;font-family:monospace;font-weight:800;color:#2ecc71}
+.live-timer .status{font-size:12px;color:#888;margin-top:4px}
+.live-timer.countdown .time{color:#F7C948}
+.live-timer.cap-reached .time{color:#c0392b}
+
+/* Info Box */
+.info-box{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;margin:12px 16px;overflow:hidden}
+.info-header{padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:600}
+.info-header:hover{background:#222}
+.info-arrow{transition:transform .2s;font-size:12px}
+.info-box.open .info-arrow{transform:rotate(90deg)}
+.info-content{display:none;padding:0 16px 16px;font-size:13px;line-height:1.6;color:#ccc}
+.info-box.open .info-content{display:block}
+.info-content h4{color:#FF6B35;margin:12px 0 8px;font-size:14px}
+.info-content ul{margin:8px 0;padding-left:20px}
+.info-content li{margin:4px 0}
+.info-content .example{background:#111;padding:10px;border-radius:8px;margin-top:8px;font-family:monospace;font-size:12px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="/" style="display:inline-block;margin-bottom:12px;padding:8px 16px;background:#FF6B35;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;position:absolute;left:16px;top:16px">🏠 Home</a>
+  <h1>🏆 LEADERBOARD</h1>
+  <div class="comp-name" id="compName">ARK Games</div>
+  <div class="theme">🐾 Gara a Team · L'Arca di Noè</div>
+</div>
+
+<!-- Live Timer -->
+<div class="live-timer" id="liveTimer">
+  <div class="wod-name" id="timerWodName">Workout</div>
+  <div class="time" id="timerTime">00:00</div>
+  <div class="status" id="timerStatus">In corso</div>
+</div>
+
+<div id="syncIndicator" style="display:none;text-align:center;padding:8px;background:#2ecc7122;color:#2ecc71;font-size:12px;font-weight:600">
+  🔄 SYNC CON TIMELINE ATTIVO
+</div>
+<div class="tabs">
+  <div class="tab tab-open active" onclick="switchCategory('Open')">🔥 Open</div>
+  <div class="tab tab-experience" onclick="switchCategory('Experience')">🌱 Experience</div>
+  <div class="tab tab-scaled" onclick="switchCategory('Scaled')">💪 Scaled</div>
+</div>
+
+<!-- Info Box -->
+<div class="info-box" id="infoBox" onclick="this.classList.toggle('open')">
+  <div class="info-header">
+    <span>ℹ️ Come funziona il punteggio?</span>
+    <span class="info-arrow">▶</span>
+  </div>
+  <div class="info-content">
+    <h4>📋 Sistema a punti per posizionamento</h4>
+    <p>Per ogni workout, i team vengono classificati nella loro categoria:</p>
+    <ul>
+      <li>1° posto nel workout = <strong>1 punto</strong></li>
+      <li>2° posto = <strong>2 punti</strong></li>
+      <li>3° posto = <strong>3 punti</strong></li>
+      <li>...e così via</li>
+    </ul>
+    
+    <h4>🏆 Classifica finale</h4>
+    <p>I punti di tutti i workout vengono sommati.<br>
+    <strong style="color:#2ecc71">VINCE chi ha il punteggio PIÙ BASSO</strong> (meno punti = più piazzamenti alti).</p>
+    
+    <h4>📊 Criteri per workout</h4>
+    <ul>
+      <li><strong>AMRAP:</strong> più ripetizioni = posizione migliore</li>
+      <li><strong>For Time:</strong> tempo più basso = posizione migliore</li>
+      <li><strong>EMOM:</strong> più ripetizioni completate = posizione migliore</li>
+    </ul>
+    
+    <p style="color:#F7C948;margin-top:12px">⚠️ Se un team non ha punteggio in un workout, riceve punti pari a ultimo posto + 1.</p>
+    
+    <div class="example">
+      🔄 <strong>Esempio:</strong><br>
+      Team con 1° nel WOD1 + 3° nel WOD2 + 2° nel WOD3<br>
+      = 1 + 3 + 2 = <strong style="color:#FF6B35">6 punti totali</strong>
+    </div>
+  </div>
+</div>
+
+<div class="auto-refresh"><span class="live-dot"></span>Aggiornamento in tempo reale</div>
+
+<div class="board" id="board">
+  <div class="no-data">
+    <div class="big">🐾</div>
+    <p>In attesa dei risultati...</p>
+  </div>
+</div>
+
+<script type="module">
+import { db, ref, get, onValue, PATHS } from './firebase-config.js';
+
+let currentCategory = 'Open';
+let workouts = [];
+
+// Load comp name
+onValue(ref(db, PATHS.competition + '/info'), (snap) => {
+  const info = snap.val();
+  if (info) document.getElementById('compName').textContent = info.name || 'ARK Games';
+});
+
+// Load workouts
+onValue(ref(db, PATHS.workouts), (snap) => {
+  const wods = snap.val();
+  workouts = wods ? Object.values(wods).sort((a, b) => a.order - b.order) : [];
+});
+
+window.switchCategory = function(cat) {
+  currentCategory = cat;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  renderBoard();
+}
+
+window.toggleMembers = function(rowId) {
+  const members = document.getElementById('members-' + rowId);
+  if (members) {
+    members.classList.toggle('show');
+  }
+}
+
+// Real-time leaderboard updates
+onValue(ref(db, PATHS.scores), () => {
+  renderBoard();
+});
+
+onValue(ref(db, PATHS.athletes), () => {
+  renderBoard();
+});
+
+// ========== SYNC WITH TIMELINE ==========
+let autoSyncEnabled = false;
+let lastHeatCategory = null;
+
+// Function to sync category from heat
+function syncToHeat(heat) {
+  if (heat && heat.category && heat.category !== currentCategory) {
+    currentCategory = heat.category;
+    lastHeatCategory = heat.category;
+    // Update tab UI
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    const catClass = currentCategory.toLowerCase();
+    const activeTab = document.querySelector(`.tab-${catClass}`) || document.querySelector(`.tab-open`);
+    if (activeTab) activeTab.classList.add('active');
+    renderBoard();
+    console.log('Leaderboard synced to:', currentCategory);
+  }
+}
+
+// Listen for auto mode status
+onValue(ref(db, PATHS.timer + '/autoModeActive'), async (snap) => {
+  autoSyncEnabled = snap.val() === true;
+  const indicator = document.getElementById('syncIndicator');
+  if (indicator) {
+    indicator.style.display = autoSyncEnabled ? 'block' : 'none';
+  }
+  
+  // When auto mode activates, immediately check current heat
+  if (autoSyncEnabled) {
+    const heatSnap = await get(ref(db, PATHS.timer + '/currentHeat'));
+    const heat = heatSnap.val();
+    syncToHeat(heat);
+  }
+});
+
+// Listen for current heat changes - auto switch category
+onValue(ref(db, PATHS.timer + '/currentHeat'), (snap) => {
+  const heat = snap.val();
+  
+  // Always sync if auto mode is on
+  if (autoSyncEnabled) {
+    syncToHeat(heat);
+  }
+});
+
+async function renderBoard() {
+  const [teamsSnap, scoresSnap] = await Promise.all([
+    get(ref(db, PATHS.athletes)),
+    get(ref(db, PATHS.scores))
+  ]);
+  
+  const teams = teamsSnap.val() || {};
+  const scores = scoresSnap.val() || {};
+  const board = document.getElementById('board');
+  
+  // Filter teams by category
+  const catTeams = Object.values(teams).filter(t => t.category === currentCategory);
+  
+  // Find workouts from actual scores (dynamic discovery)
+  const wodIdsFromScores = new Set();
+  catTeams.forEach(team => {
+    const teamScores = scores[team.id] || {};
+    Object.keys(teamScores).forEach(wodId => wodIdsFromScores.add(wodId));
+  });
+  
+  // Get workout info from config, or create placeholder
+  const catWorkouts = Array.from(wodIdsFromScores).map(wodId => {
+    const wod = workouts.find(w => w.id === wodId);
+    if (wod) return wod;
+    // Fallback: get info from first score
+    for (const team of catTeams) {
+      const score = scores[team.id]?.[wodId];
+      if (score) {
+        return { id: wodId, name: score.workoutName || wodId, type: score.workoutType || 'AMRAP' };
+      }
+    }
+    return { id: wodId, name: wodId, type: 'AMRAP' };
+  });
+  
+  if (catTeams.length === 0) {
+    board.innerHTML = '<div class="no-data"><div class="big">🐾</div><p>Nessun team nella categoria ' + currentCategory + '</p></div>';
+    return;
+  }
+  
+  if (catWorkouts.length === 0) {
+    board.innerHTML = '<div class="no-data"><div class="big">⏳</div><p>Nessun punteggio registrato per ' + currentCategory + '</p></div>';
+    return;
+  }
+  
+  // Calculate rankings per workout
+  const results = catTeams.map(team => {
+    const teamScores = scores[team.id] || {};
+    let totalPoints = 0;
+    const wodResults = {};
+    
+    catWorkouts.forEach(wod => {
+      const score = teamScores[wod.id];
+      wodResults[wod.id] = score || null;
+    });
+    
+    return { team, wodResults, totalPoints };
+  });
+  
+  // Rank per workout
+  catWorkouts.forEach(wod => {
+    const withScores = results.filter(r => r.wodResults[wod.id]);
+    
+    if (wod.type === 'For Time') {
+      withScores.sort((a, b) => (a.wodResults[wod.id].time || 9999) - (b.wodResults[wod.id].time || 9999));
+    } else { // AMRAP, EMOM
+      withScores.sort((a, b) => (b.wodResults[wod.id].reps || 0) - (a.wodResults[wod.id].reps || 0));
+    }
+    
+    withScores.forEach((r, idx) => {
+      const score = r.wodResults[wod.id];
+      // Usa rank manuale se override attivo
+      const rank = score.rankOverride ? (score.manualRank || idx + 1) : (idx + 1);
+      score._rank = rank;
+      r.totalPoints += rank;
+    });
+    
+    // Teams without score get NO points (not penalized until they actually compete)
+    // Only add penalty if at least one team has scored in this workout
+    if (withScores.length > 0) {
+      results.filter(r => !r.wodResults[wod.id]).forEach(r => {
+        r.totalPoints += withScores.length + 1;
+      });
+    }
+  });
+  
+  // Sort by total points (lower is better)
+  results.sort((a, b) => a.totalPoints - b.totalPoints);
+  
+  // Render table
+  const wodHeaders = catWorkouts.map(w => `<th class="score-cell">${w.name}</th>`).join('');
+  
+  const rows = results.map((r, idx) => {
+    const rank = idx + 1;
+    const rankClass = rank <= 3 ? 'rank-' + rank : '';
+    
+    const wodCells = catWorkouts.map(wod => {
+      const score = r.wodResults[wod.id];
+      if (!score) return '<td class="score-cell" style="color:#555">—</td>';
+      
+      const display = wod.type === 'For Time'
+        ? `${Math.floor(score.time/60)}:${String(score.time%60).padStart(2,'0')}`
+        : `${score.reps}`;
+      const wRank = score._rank || '-';
+      const color = wRank === 1 ? 'score-good' : wRank <= 3 ? 'score-mid' : '';
+      
+      return `<td class="score-cell ${color}">${display}<span class="wod-rank">#${wRank}</span></td>`;
+    }).join('');
+    
+    const teamName = r.team.teamName || r.team.name;
+    const members = (r.team.member1 || '') + ' & ' + (r.team.member2 || '');
+    
+    return `
+      <tr class="expandable" onclick="toggleMembers('${r.team.id}')">
+        <td class="rank ${rankClass}">${rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : rank}</td>
+        <td class="team-cell">
+          ${r.team.number ? '<span class="team-num">#' + r.team.number + '</span>' : ''}
+          <span class="team-name">${teamName}</span>
+          <div class="team-members" id="members-${r.team.id}">${members}</div>
+        </td>
+        ${wodCells}
+        <td class="total-cell">${r.totalPoints} pts</td>
+      </tr>
+    `;
+  }).join('');
+  
+  board.innerHTML = `
+    <table class="lb-table">
+      <thead>
+        <tr>
+          <th>Pos</th>
+          <th>Team</th>
+          ${wodHeaders}
+          <th style="text-align:center">Totale</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// Initial render
+setTimeout(renderBoard, 500);
+
+// ========== LIVE TIMER ==========
+let liveTimerInterval = null;
+
+onValue(ref(db, PATHS.timer), (snap) => {
+  const timer = snap.val();
+  const timerEl = document.getElementById('liveTimer');
+  const wodNameEl = document.getElementById('timerWodName');
+  const timeEl = document.getElementById('timerTime');
+  const statusEl = document.getElementById('timerStatus');
+  
+  if (liveTimerInterval) { clearInterval(liveTimerInterval); liveTimerInterval = null; }
+  
+  if (!timer || timer.status === 'stopped') {
+    timerEl.classList.remove('show', 'countdown', 'cap-reached');
+    return;
+  }
+  
+  timerEl.classList.add('show');
+  wodNameEl.textContent = timer.wodName || 'Workout';
+  
+  function updateLiveTimer() {
+    const now = Date.now();
+    
+    if (timer.status === 'countdown') {
+      const remaining = Math.ceil((timer.startAt - now) / 1000);
+      timerEl.classList.add('countdown');
+      timerEl.classList.remove('cap-reached');
+      
+      if (remaining > 0) {
+        timeEl.textContent = remaining;
+        statusEl.textContent = 'Countdown...';
+      } else {
+        timeEl.textContent = 'GO!';
+        statusEl.textContent = 'Partenza!';
+      }
+    } else if (timer.status === 'running') {
+      timerEl.classList.remove('countdown');
+      
+      const elapsed = Math.floor((now - timer.startAt) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      timeEl.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      statusEl.textContent = '🏃 In corso';
+      
+      // Check cap
+      if (timer.cap && elapsed >= timer.cap * 60) {
+        timerEl.classList.add('cap-reached');
+        statusEl.textContent = '⏰ TIME CAP!';
+      }
+    }
+  }
+  
+  updateLiveTimer();
+  liveTimerInterval = setInterval(updateLiveTimer, 200);
+});
+</script>
+</body>
+</html>

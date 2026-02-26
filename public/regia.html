@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎬 ARK Games - REGIA</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+    }
+    
+    /* Navigation Bar */
+    .nav-bar{display:flex;gap:6px;flex-wrap:wrap;padding:10px;background:#0a0a0a;border-bottom:1px solid #222}
+    .nav-link{padding:8px 12px;background:#1a1a1a;color:#fff;text-decoration:none;border-radius:6px;font-size:12px;font-weight:600;border:1px solid #333}
+    .nav-link:hover{background:#FF6B35;border-color:#FF6B35}
+    .nav-link.current{background:#FF6B35;border-color:#FF6B35}
+    
+    .header {
+      background: linear-gradient(135deg, #1a1a1a, #0a0a0a);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #FF6B35;
+    }
+    
+    .header h1 {
+      font-size: 24px;
+      color: #FF6B35;
+    }
+    
+    .status {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+    
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 14px;
+    }
+    
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #2ecc71;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .main-container {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      height: calc(100vh - 70px);
+    }
+    
+    /* ===== OUTPUT PRINCIPALE ===== */
+    .output-section {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .output-label {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .output-label .live-badge {
+      background: #e74c3c;
+      color: #fff;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      animation: pulse 1s infinite;
+    }
+    
+    .main-output {
+      flex: 1;
+      background: #111;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      border: 3px solid #FF6B35;
+    }
+    
+    .main-output video, .main-output img, .main-output iframe {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+    
+    .main-output .camera-name {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: rgba(0,0,0,0.8);
+      padding: 8px 15px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: bold;
+      border: 2px solid #FF6B35;
+    }
+    
+    .main-output .no-signal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #666;
+    }
+    
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      background: #111;
+      border-left: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    
+    .sidebar-header {
+      padding: 15px;
+      border-bottom: 1px solid #333;
+      font-weight: bold;
+      color: #FF6B35;
+    }
+    
+    /* ===== PREVIEW CAMERE ===== */
+    .camera-grid {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .camera-preview {
+      background: #1a1a1a;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid #333;
+    }
+    
+    .camera-preview:hover {
+      border-color: #FF6B35;
+      transform: scale(1.02);
+    }
+    
+    .camera-preview.active {
+      border-color: #2ecc71;
+      box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
+    }
+    
+    .camera-preview.offline {
+      opacity: 0.5;
+    }
+    
+    .camera-preview .preview-video {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      background: #000;
+    }
+    
+    .camera-preview .preview-info {
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .camera-preview .cam-name {
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    .camera-preview .cam-status {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: #333;
+    }
+    
+    .camera-preview.active .cam-status {
+      background: #2ecc71;
+      color: #000;
+    }
+    
+    /* ===== CONFIGURAZIONE ===== */
+    .config-section {
+      padding: 15px;
+      border-top: 1px solid #333;
+      margin-top: auto;
+    }
+    
+    .config-section h3 {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    
+    .config-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .config-row input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 13px;
+    }
+    
+    .config-row button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      background: #FF6B35;
+      color: #fff;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .config-row button:hover {
+      background: #ff8c5a;
+    }
+    
+    /* ===== OVERLAY TOGGLE ===== */
+    .overlay-controls {
+      padding: 15px;
+      border-top: 1px solid #333;
+    }
+    
+    .overlay-controls h3 {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    
+    .toggle-btn {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #333;
+      border-radius: 8px;
+      background: #1a1a1a;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .toggle-btn:hover {
+      border-color: #FF6B35;
+    }
+    
+    .toggle-btn.active {
+      background: #FF6B35;
+      border-color: #FF6B35;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .main-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr auto;
+      }
+      
+      .sidebar {
+        border-left: none;
+        border-top: 1px solid #333;
+        max-height: 300px;
+      }
+      
+      .camera-grid {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+      
+      .camera-preview {
+        flex: 1;
+        min-width: 150px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<div class="nav-bar">
+  <a href="/" class="nav-link">🏠</a>
+  <a href="/admin.html" class="nav-link">⚙️ Admin</a>
+  <a href="/regia.html" class="nav-link current">🎬 Regia</a>
+  <a href="/stream.html" class="nav-link">📺 Stream</a>
+  <a href="/tv.html" class="nav-link">📺 TV</a>
+  <a href="/leaderboard.html" class="nav-link">🏆 Classifica</a>
+</div>
+
+<div class="header">
+  <h1>🎬 ARK Games - REGIA</h1>
+  <div class="status">
+    <div class="status-item">
+      <div class="status-dot"></div>
+      <span>Camere connesse: <strong id="cameraCount">0</strong>/5</span>
+    </div>
+    <div class="status-item">
+      <span id="currentTime">--:--:--</span>
+    </div>
+  </div>
+</div>
+
+<div class="main-container">
+  <!-- OUTPUT PRINCIPALE -->
+  <div class="output-section">
+    <div class="output-label">
+      📺 OUTPUT PRINCIPALE
+      <span class="live-badge">● REC</span>
+    </div>
+    <div class="main-output" id="mainOutput">
+      <div class="camera-name" id="mainCameraName">Nessuna camera</div>
+      <div class="no-signal" id="noSignal">
+        <div style="font-size: 48px; margin-bottom: 15px;">📹</div>
+        <div style="font-size: 18px;">Seleziona una camera</div>
+        <div style="font-size: 14px; margin-top: 10px;">Clicca su una preview a destra</div>
+      </div>
+      <div id="reconnecting" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; color:#FF6B35;">
+        <div style="font-size: 36px; margin-bottom: 10px;">🔄</div>
+        <div>Riconnessione in corso...</div>
+      </div>
+      <img id="mainVideo" style="display: none;"
+           onerror="document.getElementById('reconnecting').style.display='block'; this.style.opacity='0.3';"
+           onload="document.getElementById('reconnecting').style.display='none'; this.style.opacity='1';" />
+    </div>
+  </div>
+  
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">📹 CAMERE</div>
+    
+    <div class="camera-grid" id="cameraGrid">
+      <!-- Camera previews verranno generate qui -->
+    </div>
+    
+    <!-- OVERLAY -->
+    <div class="overlay-controls">
+      <h3>🎨 OVERLAY</h3>
+      <button class="toggle-btn" id="overlayToggle" onclick="toggleOverlay()">
+        Mostra Overlay ARK Games
+      </button>
+    </div>
+    
+    <!-- SCANSIONE AUTO -->
+    <div class="config-section" style="border-top: 1px solid #333;">
+      <h3>🔍 SCANSIONE AUTOMATICA</h3>
+      <div class="config-row">
+        <input type="text" id="scanSubnet" placeholder="Subnet (es: 192.168.1)" />
+        <button id="scanBtn" onclick="scanNetwork()" style="white-space:nowrap;">Cerca Camere</button>
+      </div>
+      <div id="scanStatus" style="font-size:12px; color:#888; margin-top:5px;"></div>
+      <div id="scanResults" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- CONFIGURAZIONE -->
+    <div class="config-section">
+      <h3>⚙️ AGGIUNGI CAMERA</h3>
+      <div class="config-row">
+        <input type="text" id="cameraName" placeholder="Nome (es: Lane 1)" />
+      </div>
+      <div class="config-row">
+        <input type="text" id="cameraUrl" placeholder="URL (es: http://192.168.1.100:8080/video)" />
+        <button onclick="addCamera()">+ Aggiungi</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getDatabase, ref, set, onValue, push, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAL7evRkNPomJv3Bca2LjLqCawu_j3S5Rc",
+  authDomain: "copilota-6d94a.firebaseapp.com",
+  databaseURL: "https://copilota-6d94a-default-rtdb.firebaseio.com",
+  projectId: "copilota-6d94a"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Camere predefinite
+const DEFAULT_CAMERAS = [
+  { id: 'lane1', name: '🎯 Lane 1', url: 'http://10.135.224.49:8080/videofeed' },
+  { id: 'lane2', name: '🎯 Lane 2', url: 'http://10.135.224.88:8080/videofeed' },
+  { id: 'lane3', name: '🎯 Lane 3', url: 'http://10.135.224.176:8080/videofeed' },
+  { id: 'panoramica', name: '🌐 Panoramica', url: '' },
+  { id: 'mobile', name: '🎬 Mobile', url: '' }
+];
+
+let cameras = [...DEFAULT_CAMERAS];
+let activeCamera = null;
+let showOverlay = false;
+let reconnectAttempts = 0;
+const MAX_RECONNECT = 5;
+
+// MJPEG stream continuo - no refresh necessario
+
+// Aggiorna orario
+function updateTime() {
+  const now = new Date();
+  document.getElementById('currentTime').textContent = now.toLocaleTimeString('it-IT');
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+// Render camera grid
+function renderCameras() {
+  const grid = document.getElementById('cameraGrid');
+  grid.innerHTML = '';
+  
+  let connectedCount = 0;
+  
+  cameras.forEach(cam => {
+    const isConnected = cam.url && cam.url.length > 10;
+    if (isConnected) connectedCount++;
+    
+    const div = document.createElement('div');
+    div.className = `camera-preview ${activeCamera === cam.id ? 'active' : ''} ${!isConnected ? 'offline' : ''}`;
+    div.onclick = () => selectCamera(cam.id);
+    
+    div.innerHTML = `
+      <img class="preview-video"
+           src="${isConnected ? cam.url : ''}"
+           onerror="this.style.opacity='0.3';"
+           onload="this.style.opacity='1';"
+           style="${!isConnected ? 'display:none' : ''}; transition: opacity 0.3s;" />
+      <div class="preview-video offline-placeholder" style="${isConnected ? 'display:none' : ''}; background:#222; display:flex; align-items:center; justify-content:center; height:120px;">
+        <span style="color:#666">📵 Offline</span>
+      </div>
+      <div class="preview-info">
+        <span class="cam-name">${cam.name}</span>
+        <span class="cam-status">${activeCamera === cam.id ? '● LIVE' : (isConnected ? 'Ready' : 'Config')}</span>
+      </div>
+    `;
+    
+    grid.appendChild(div);
+  });
+  
+  document.getElementById('cameraCount').textContent = connectedCount;
+}
+
+// Seleziona camera
+window.selectCamera = function(camId) {
+  const cam = cameras.find(c => c.id === camId);
+  if (!cam || !cam.url) {
+    alert('Camera non configurata! Aggiungi prima l\'URL.');
+    return;
+  }
+  
+  activeCamera = camId;
+  
+  document.getElementById('noSignal').style.display = 'none';
+  document.getElementById('mainVideo').style.display = 'block';
+  document.getElementById('mainVideo').src = cam.url;
+  document.getElementById('mainCameraName').textContent = cam.name;
+  
+  // Salva su Firebase
+  set(ref(db, 'ark_regia/activeCamera'), { id: camId, name: cam.name, url: cam.url });
+  
+  renderCameras();
+}
+
+// Aggiungi camera
+window.addCamera = function() {
+  const nameInput = document.getElementById('cameraName');
+  const urlInput = document.getElementById('cameraUrl');
+  
+  const name = nameInput.value.trim();
+  const url = urlInput.value.trim();
+  
+  if (!name || !url) {
+    alert('Inserisci nome e URL!');
+    return;
+  }
+  
+  // Cerca se esiste già una camera con questo nome
+  const existing = cameras.find(c => c.name.toLowerCase().includes(name.toLowerCase()));
+  if (existing) {
+    existing.url = url;
+  } else {
+    cameras.push({ id: 'custom_' + Date.now(), name: name, url: url });
+  }
+  
+  // Salva su Firebase
+  set(ref(db, 'ark_regia/cameras'), cameras);
+  
+  nameInput.value = '';
+  urlInput.value = '';
+  
+  renderCameras();
+}
+
+// Toggle overlay
+window.toggleOverlay = function() {
+  showOverlay = !showOverlay;
+  const btn = document.getElementById('overlayToggle');
+  btn.classList.toggle('active', showOverlay);
+  btn.textContent = showOverlay ? '✓ Overlay Attivo' : 'Mostra Overlay ARK Games';
+  
+  set(ref(db, 'ark_regia/showOverlay'), showOverlay);
+}
+
+// Scansione automatica rete per IP Webcam
+window.scanNetwork = function() {
+  const subnetInput = document.getElementById('scanSubnet');
+  const subnet = subnetInput.value.trim();
+  const statusEl = document.getElementById('scanStatus');
+  const resultsEl = document.getElementById('scanResults');
+  const scanBtn = document.getElementById('scanBtn');
+
+  if (!subnet || !subnet.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}$/)) {
+    alert('Inserisci un subnet valido (es: 192.168.1 oppure 10.135.224)');
+    return;
+  }
+
+  scanBtn.disabled = true;
+  scanBtn.textContent = 'Scansione...';
+  statusEl.textContent = 'Scansione in corso... 0/254';
+  resultsEl.innerHTML = '';
+
+  const found = [];
+  let checked = 0;
+  const TIMEOUT = 3000;
+  const PORT = 8080;
+
+  for (let i = 1; i <= 254; i++) {
+    const ip = subnet + '.' + i;
+    const url = 'http://' + ip + ':' + PORT + '/shot.jpg';
+    const img = new Image();
+    let done = false;
+
+    const timer = setTimeout(() => {
+      if (!done) {
+        done = true;
+        checked++;
+        statusEl.textContent = 'Scansione in corso... ' + checked + '/254';
+        if (checked >= 254) finishScan();
+      }
+    }, TIMEOUT);
+
+    img.onload = function() {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      checked++;
+      found.push(ip);
+      statusEl.textContent = 'Scansione in corso... ' + checked + '/254 (trovate: ' + found.length + ')';
+      // Mostra risultato subito
+      const div = document.createElement('div');
+      div.style.cssText = 'padding:6px 10px; margin:4px 0; background:#1a3a1a; border:1px solid #2ecc71; border-radius:6px; font-size:12px; display:flex; justify-content:space-between; align-items:center;';
+      div.innerHTML = '<span style="color:#2ecc71;">' + ip + ':' + PORT + '</span><button onclick="autoAddCamera(\'' + ip + '\')" style="padding:4px 10px; border:none; border-radius:4px; background:#2ecc71; color:#000; cursor:pointer; font-weight:bold; font-size:11px;">+ Aggiungi</button>';
+      resultsEl.appendChild(div);
+      if (checked >= 254) finishScan();
+    };
+
+    img.onerror = function() {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      checked++;
+      statusEl.textContent = 'Scansione in corso... ' + checked + '/254' + (found.length > 0 ? ' (trovate: ' + found.length + ')' : '');
+      if (checked >= 254) finishScan();
+    };
+
+    img.src = url;
+  }
+
+  function finishScan() {
+    scanBtn.disabled = false;
+    scanBtn.textContent = 'Cerca Camere';
+    if (found.length === 0) {
+      statusEl.textContent = 'Nessuna camera IP Webcam trovata su ' + subnet + '.x:' + PORT;
+    } else {
+      statusEl.innerHTML = '<span style="color:#2ecc71;">Trovate ' + found.length + ' camere!</span> <button onclick="autoAddAll()" style="padding:3px 8px; border:none; border-radius:4px; background:#FF6B35; color:#fff; cursor:pointer; font-size:11px; font-weight:bold;">Aggiungi Tutte</button>';
+      // Salva found per autoAddAll
+      window._foundCameras = found;
+    }
+  }
+}
+
+// Aggiungi singola camera trovata
+window.autoAddCamera = function(ip) {
+  const url = 'http://' + ip + ':8080/videofeed';
+  // Trova primo slot vuoto o aggiungi
+  const empty = cameras.find(c => !c.url || c.url.length <= 10);
+  if (empty) {
+    empty.url = url;
+    empty.name = empty.name.replace('📵 ', '');
+  } else {
+    cameras.push({ id: 'auto_' + Date.now(), name: 'Cam ' + ip.split('.').pop(), url: url });
+  }
+  set(ref(db, 'ark_regia/cameras'), cameras);
+  renderCameras();
+}
+
+// Aggiungi tutte le camere trovate
+window.autoAddAll = function() {
+  if (!window._foundCameras) return;
+  const laneNames = ['Lane 1', 'Lane 2', 'Lane 3', 'Panoramica', 'Mobile'];
+  // Reset camere
+  cameras = [];
+  window._foundCameras.forEach((ip, i) => {
+    cameras.push({
+      id: 'auto_' + i,
+      name: (i < laneNames.length ? laneNames[i] : 'Cam ' + (i + 1)),
+      url: 'http://' + ip + ':8080/videofeed'
+    });
+  });
+  // Aggiungi slot vuoti fino a 5
+  for (let i = cameras.length; i < 5; i++) {
+    cameras.push({ id: 'slot_' + i, name: laneNames[i] || 'Cam ' + (i + 1), url: '' });
+  }
+  set(ref(db, 'ark_regia/cameras'), cameras);
+  renderCameras();
+  document.getElementById('scanStatus').innerHTML = '<span style="color:#2ecc71;">Tutte le camere aggiunte!</span>';
+}
+
+// Pulisci vecchi dati Firebase e salva nuove camere
+set(ref(db, 'ark_regia/cameras'), DEFAULT_CAMERAS);
+set(ref(db, 'ark_regia/activeCamera'), null);
+
+// Carica camere da Firebase
+onValue(ref(db, 'ark_regia/cameras'), (snap) => {
+  const data = snap.val();
+  if (data && Array.isArray(data)) {
+    cameras = data;
+  }
+  renderCameras();
+});
+
+// Carica camera attiva
+onValue(ref(db, 'ark_regia/activeCamera'), (snap) => {
+  const data = snap.val();
+  if (data && data.id) {
+    activeCamera = data.id;
+    document.getElementById('noSignal').style.display = 'none';
+    document.getElementById('mainVideo').style.display = 'block';
+    document.getElementById('mainVideo').src = data.url;
+    document.getElementById('mainCameraName').textContent = data.name;
+    renderCameras();
+  }
+});
+
+// Init
+renderCameras();
+</script>
+
+</body>
+</html>

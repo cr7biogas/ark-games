@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>📺 ARK Games - TV</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#000;color:#fff}
+
+.container{display:flex;flex-direction:column;height:100vh;padding:10px}
+
+/* HEADER - COMPATTO */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 20px;
+  background:#111;
+  border-radius:12px;
+  margin-bottom:10px;
+  flex-shrink:0;
+}
+.header .logo{font-size:1.5em;font-weight:800}
+.header .logo span{color:#FF6B35}
+.header .workout-info{text-align:right}
+.header .workout-name{font-size:1.3em;font-weight:700;color:#FF6B35}
+.header .workout-type{font-size:0.9em;color:#888}
+
+/* TIMER - PROTAGONISTA ASSOLUTO */
+.timer-section{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  min-height:0;
+}
+.timer{
+  font-size:min(25vw, 35vh);
+  font-family:'SF Mono',Monaco,'Courier New',monospace;
+  font-weight:900;
+  letter-spacing:0.05em;
+  line-height:1;
+  transition:color .3s;
+  text-shadow:0 0 60px rgba(255,255,255,0.3);
+}
+.timer.countdown{color:#fff;animation:pulse 1s infinite}
+.timer.running{color:#2ecc71;text-shadow:0 0 80px rgba(46,204,113,0.5)}
+.timer.cap{color:#e74c3c;text-shadow:0 0 80px rgba(231,76,60,0.5)}
+.timer-label{font-size:1.5em;color:#888;margin-top:10px;text-transform:uppercase;letter-spacing:3px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+
+/* LANES - GRIGLIA COMPATTA IN BASSO */
+.lanes-section{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  padding:10px 0;
+  flex-shrink:0;
+}
+.lane-card{
+  background:#111;
+  border:2px solid #333;
+  border-radius:12px;
+  padding:12px;
+  text-align:center;
+  transition:all .3s;
+}
+.lane-card.active{border-color:#2ecc71;background:#0a1a0a}
+.lane-card.completed{border-color:#FF6B35;background:#1a0a0a}
+.lane-num{font-size:0.8em;color:#666;margin-bottom:4px}
+.lane-emoji{font-size:4em;line-height:1.1;margin:8px 0}
+.lane-team{font-size:0.9em;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#888}
+.lane-members{font-size:0.7em;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lane-score{font-size:3em;font-weight:900;color:#FF6B35;font-family:monospace;line-height:1.1}
+.lane-score.pulse{animation:scorePulse .3s}
+@keyframes scorePulse{0%{transform:scale(1)}50%{transform:scale(1.2);color:#fff}100%{transform:scale(1)}}
+.lane-status{font-size:0.7em;padding:3px 10px;border-radius:10px;display:inline-block;margin-top:4px}
+.lane-status.waiting{background:#333;color:#666}
+.lane-status.active{background:#2ecc7133;color:#2ecc71}
+.lane-status.completed{background:#FF6B3533;color:#FF6B35}
+
+/* LEADERBOARD BAR - TICKER IN BASSO */
+.leaderboard-bar{
+  background:#111;
+  border-radius:12px;
+  padding:8px 20px;
+  display:flex;
+  align-items:center;
+  gap:20px;
+  flex-shrink:0;
+  margin-top:10px;
+}
+.lb-title{font-size:0.9em;color:#888;white-space:nowrap}
+.lb-title span{color:#FF6B35;font-weight:700}
+.lb-items{display:flex;gap:20px;flex:1;justify-content:center}
+.lb-item{display:flex;align-items:center;gap:8px}
+.lb-rank{font-size:1.2em}
+.lb-team{font-weight:600}
+.lb-pts{color:#888;font-size:0.9em}
+
+/* Home button */
+.home-btn{position:fixed;top:10px;left:10px;padding:8px 12px;background:#222;color:#fff;border-radius:8px;text-decoration:none;font-size:12px;opacity:0.3;transition:opacity .3s;z-index:50}
+.home-btn:hover{opacity:1}
+
+/* Fullscreen hint */
+.fs-hint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#FF6B35;color:#fff;padding:20px 40px;border-radius:12px;font-size:1.5em;z-index:100;cursor:pointer;display:none}
+.fs-hint.show{display:block;animation:fadeIn .5s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* Responsive per schermi più piccoli */
+@media (max-height: 600px) {
+  .timer{font-size:min(20vw, 25vh)}
+  .lane-score{font-size:2em}
+  .lanes-section{gap:6px}
+  .lane-card{padding:8px}
+}
+</style>
+</head>
+<body>
+
+<a href="/" class="home-btn">🏠</a>
+<div class="fs-hint" id="fsHint" onclick="goFullscreen()">📺 Tap per Fullscreen</div>
+
+<div class="container">
+  <!-- HEADER COMPATTO -->
+  <div class="header">
+    <div class="logo">🐾 ARK <span>GAMES</span></div>
+    <div class="workout-info">
+      <div class="workout-name" id="wodName">In attesa...</div>
+      <div class="workout-type" id="wodType"></div>
+    </div>
+  </div>
+  
+  <!-- TIMER PROTAGONISTA -->
+  <div class="timer-section">
+    <div class="timer" id="timer">00:00</div>
+    <div class="timer-label" id="timerLabel">Timer</div>
+  </div>
+  
+  <!-- LANES COMPATTE -->
+  <div class="lanes-section">
+    <div class="lane-card" id="lane1">
+      <div class="lane-num">LANE 1</div>
+      <div class="lane-emoji" id="lane1-emoji">🐾</div>
+      <div class="lane-team" id="lane1-team">—</div>
+      <div class="lane-members" id="lane1-members"></div>
+      <div class="lane-score" id="lane1-score">0</div>
+      <div class="lane-status waiting" id="lane1-status">ATTESA</div>
+    </div>
+    <div class="lane-card" id="lane2">
+      <div class="lane-num">LANE 2</div>
+      <div class="lane-emoji" id="lane2-emoji">🐾</div>
+      <div class="lane-team" id="lane2-team">—</div>
+      <div class="lane-members" id="lane2-members"></div>
+      <div class="lane-score" id="lane2-score">0</div>
+      <div class="lane-status waiting" id="lane2-status">ATTESA</div>
+    </div>
+    <div class="lane-card" id="lane3">
+      <div class="lane-num">LANE 3</div>
+      <div class="lane-emoji" id="lane3-emoji">🐾</div>
+      <div class="lane-team" id="lane3-team">—</div>
+      <div class="lane-members" id="lane3-members"></div>
+      <div class="lane-score" id="lane3-score">0</div>
+      <div class="lane-status waiting" id="lane3-status">ATTESA</div>
+    </div>
+  </div>
+  
+  <!-- LEADERBOARD BAR -->
+  <div class="leaderboard-bar">
+    <div class="lb-title">🏆 <span id="categoryName">Open</span></div>
+    <div class="lb-items" id="lbItems">
+      <div class="lb-item"><span class="lb-rank">🥇</span><span class="lb-team" id="p1-team">—</span><span class="lb-pts" id="p1-pts"></span></div>
+      <div class="lb-item"><span class="lb-rank">🥈</span><span class="lb-team" id="p2-team">—</span><span class="lb-pts" id="p2-pts"></span></div>
+      <div class="lb-item"><span class="lb-rank">🥉</span><span class="lb-team" id="p3-team">—</span><span class="lb-pts" id="p3-pts"></span></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { db, ref, onValue, get, set, PATHS, getSyncedTime, syncClock, resyncClock } from './firebase-config.js';
+
+// Sync clock on page load
+syncClock();
+
+let timerInterval = null;
+let categoryRotation = ['Open', 'Experience', 'Scaled'];
+let currentCatIdx = 0;
+let lastScores = {1: 0, 2: 0, 3: 0};
+
+// Fullscreen
+function goFullscreen() {
+  document.documentElement.requestFullscreen?.() || 
+  document.documentElement.webkitRequestFullscreen?.();
+  document.getElementById('fsHint').classList.remove('show');
+}
+window.goFullscreen = goFullscreen;
+
+setTimeout(() => {
+  if (!document.fullscreenElement) {
+    document.getElementById('fsHint').classList.add('show');
+  }
+}, 2000);
+
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement) {
+    document.getElementById('fsHint').classList.remove('show');
+  }
+});
+
+// TIMER SYNC
+onValue(ref(db, PATHS.timer), (snap) => {
+  const timer = snap.val();
+  const timerEl = document.getElementById('timer');
+  const labelEl = document.getElementById('timerLabel');
+  const wodNameEl = document.getElementById('wodName');
+  const wodTypeEl = document.getElementById('wodType');
+  
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  
+  if (!timer || timer.status === 'stopped') {
+    timerEl.innerHTML = "Chi è il re dell'IA?<br><span style='color:#FF6B35'>YUJIIN!</span>";
+    timerEl.className = 'timer';
+    timerEl.style.fontSize = 'min(12vw, 18vh)';
+    labelEl.textContent = '🐾 ARK GAMES 2026';
+    wodNameEl.textContent = 'In attesa del prossimo workout...';
+    wodTypeEl.textContent = '';
+    // Show Eugenio background
+    document.body.style.background = 'url(/eugenio-bg.jpg) center/cover no-repeat #000';
+    return;
+  }
+  
+  // Remove background when timer is active
+  document.body.style.background = '#000';
+  
+  // Reset font size for timer
+  timerEl.style.fontSize = '';
+  
+  wodNameEl.textContent = timer.wodName || 'Workout';
+  wodTypeEl.textContent = timer.duration ? `${timer.duration} min CAP` : '';
+  
+  // Resync clock when countdown starts for maximum accuracy
+  if (timer.status === 'countdown') {
+    resyncClock().then(() => console.log('TV: Clock resynced for countdown'));
+  }
+  
+  function updateTimer() {
+    const now = getSyncedTime();
+    
+    if (timer.status === 'countdown') {
+      const remaining = Math.ceil((timer.startAt - now) / 1000);
+      timerEl.className = 'timer countdown';
+      labelEl.textContent = 'PRONTI';
+      
+      if (remaining > 0) {
+        timerEl.textContent = remaining;
+      } else {
+        timerEl.textContent = 'GO!';
+        // Auto-transition to running after GO! (backup if admin doesn't do it)
+        if (!timer._transitioned) {
+          setTimeout(() => {
+            set(ref(db, PATHS.timer + '/status'), 'running');
+          }, 500);
+        }
+      }
+    } else if (timer.status === 'running') {
+      const elapsed = Math.floor((now - timer.startAt) / 1000);
+      const capSeconds = timer.cap ? timer.cap * 60 : null;
+      
+      // TIME CAP REACHED - stop timer
+      if (capSeconds && elapsed >= capSeconds) {
+        timerEl.textContent = 'TIME CAP!';
+        timerEl.className = 'timer cap';
+        labelEl.textContent = String(timer.cap).padStart(2, '0') + ':00 RAGGIUNTI';
+        // Auto-stop after showing TIME CAP for 3 seconds
+        if (!timer._capReached) {
+          setTimeout(() => {
+            set(ref(db, PATHS.timer + '/status'), 'stopped');
+          }, 3000);
+        }
+        return;
+      }
+      
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      timerEl.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      labelEl.textContent = 'IN CORSO';
+      timerEl.className = 'timer running';
+    }
+  }
+  
+  updateTimer();
+  timerInterval = setInterval(updateTimer, 100);
+});
+
+// Extract emoji from team name (e.g., "🦁 I Leoni" -> "🦁")
+function extractEmoji(str) {
+  if (!str) return '🐾';
+  // Match emoji at start of string
+  const emojiMatch = str.match(/^(\p{Emoji})/u);
+  return emojiMatch ? emojiMatch[1] : '🐾';
+}
+
+// Extract team name without emoji (e.g., "🦁 I Leoni" -> "I Leoni")
+function extractTeamName(str) {
+  if (!str) return '—';
+  return str.replace(/^\p{Emoji}\s*/u, '').trim() || str;
+}
+
+// LANE ATHLETES
+onValue(ref(db, PATHS.timer + '/laneAthletes'), (snap) => {
+  const athletes = snap.val() || {};
+  
+  for (let lane = 1; lane <= 3; lane++) {
+    const emojiEl = document.getElementById(`lane${lane}-emoji`);
+    const teamEl = document.getElementById(`lane${lane}-team`);
+    const membersEl = document.getElementById(`lane${lane}-members`);
+    const data = athletes[lane];
+    
+    if (data) {
+      const fullName = data.teamName || data.athleteName || '—';
+      emojiEl.textContent = extractEmoji(fullName);
+      teamEl.textContent = extractTeamName(fullName);
+      membersEl.textContent = data.member1 && data.member2 ? 
+        `${data.member1} & ${data.member2}` : '';
+    } else {
+      emojiEl.textContent = '🐾';
+      teamEl.textContent = '—';
+      membersEl.textContent = '';
+    }
+  }
+});
+
+// LANE STATUS
+onValue(ref(db, PATHS.timer + '/laneStatus'), (snap) => {
+  const statuses = snap.val() || {};
+  
+  for (let lane = 1; lane <= 3; lane++) {
+    const cardEl = document.getElementById(`lane${lane}`);
+    const statusEl = document.getElementById(`lane${lane}-status`);
+    const status = statuses[lane]?.status || 'waiting';
+    
+    cardEl.className = 'lane-card ' + status;
+    statusEl.className = 'lane-status ' + status;
+    
+    if (status === 'confirmed') {
+      statusEl.textContent = 'IN GARA';
+      cardEl.className = 'lane-card active';
+      statusEl.className = 'lane-status active';
+    } else if (status === 'absent') {
+      statusEl.textContent = 'ASSENTE';
+    } else {
+      statusEl.textContent = 'ATTESA';
+    }
+  }
+});
+
+// LIVE SCORES - Leader shows reps, others show difference
+onValue(ref(db, PATHS.timer + '/liveScores'), (snap) => {
+  const scores = snap.val() || {};
+  
+  // Find max score (leader)
+  let maxReps = 0;
+  let leaderLane = 1;
+  for (let lane = 1; lane <= 3; lane++) {
+    const reps = scores[lane]?.reps || 0;
+    if (reps > maxReps) {
+      maxReps = reps;
+      leaderLane = lane;
+    }
+  }
+  
+  for (let lane = 1; lane <= 3; lane++) {
+    const scoreEl = document.getElementById(`lane${lane}-score`);
+    const cardEl = document.getElementById(`lane${lane}`);
+    const data = scores[lane];
+    const newScore = data?.reps || 0;
+    
+    if (newScore !== lastScores[lane]) {
+      scoreEl.classList.add('pulse');
+      setTimeout(() => scoreEl.classList.remove('pulse'), 300);
+      lastScores[lane] = newScore;
+    }
+    
+    // Leader shows total reps, others show difference
+    if (lane === leaderLane || maxReps === 0) {
+      scoreEl.textContent = newScore;
+      scoreEl.style.color = '#2ecc71'; // Green for leader
+    } else {
+      const diff = newScore - maxReps;
+      scoreEl.textContent = diff; // Will be negative like -5
+      scoreEl.style.color = '#FF6B35'; // Orange for others
+    }
+    
+    if (data?.submitted) {
+      cardEl.className = 'lane-card completed';
+      document.getElementById(`lane${lane}-status`).textContent = 'FATTO';
+      document.getElementById(`lane${lane}-status`).className = 'lane-status completed';
+    }
+  }
+});
+
+// LEADERBOARD ROTATION
+async function loadLeaderboard(category) {
+  document.getElementById('categoryName').textContent = category;
+  
+  const [teamsSnap, scoresSnap, wodsSnap] = await Promise.all([
+    get(ref(db, PATHS.athletes)),
+    get(ref(db, PATHS.scores)),
+    get(ref(db, PATHS.workouts))
+  ]);
+  
+  const teams = teamsSnap.val() || {};
+  const scores = scoresSnap.val() || {};
+  const wods = Object.values(wodsSnap.val() || {}).sort((a,b) => a.order - b.order);
+  
+  const catTeams = Object.values(teams).filter(t => t.category === category);
+  
+  const results = catTeams.map(team => {
+    let totalPoints = 0;
+    wods.forEach(wod => {
+      const score = scores[team.id]?.[wod.id];
+      if (score) totalPoints += score._rank || 1;
+    });
+    return { team, totalPoints };
+  });
+  
+  results.sort((a,b) => a.totalPoints - b.totalPoints);
+  
+  for (let i = 1; i <= 3; i++) {
+    const teamEl = document.getElementById(`p${i}-team`);
+    const ptsEl = document.getElementById(`p${i}-pts`);
+    
+    if (results[i-1] && results[i-1].totalPoints > 0) {
+      teamEl.textContent = results[i-1].team.teamName || results[i-1].team.name;
+      ptsEl.textContent = `(${results[i-1].totalPoints}pts)`;
+    } else {
+      teamEl.textContent = '—';
+      ptsEl.textContent = '';
+    }
+  }
+}
+
+loadLeaderboard(categoryRotation[0]);
+setInterval(() => {
+  currentCatIdx = (currentCatIdx + 1) % categoryRotation.length;
+  loadLeaderboard(categoryRotation[currentCatIdx]);
+}, 15000);
+
+</script>
+</body>
+</html>
+<!-- DEPLOY 1772051950 -->

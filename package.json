@@ -1,0 +1,11 @@
+{
+  "name": "ark-games",
+  "version": "1.0.0",
+  "description": "CrossFit Competition Management - Judges, Scoring, Leaderboard",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "firebase": "^12.9.0"
+  }
+}

@@ -1,0 +1,2120 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⚙️ ARK Games - Admin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh;padding:16px}
+h1{font-size:24px;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+h2{font-size:18px;margin:24px 0 12px;color:#FF6B35}
+.back{color:#888;text-decoration:none;font-size:14px;display:inline-block;margin-bottom:16px}
+.card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:16px;margin-bottom:12px}
+input,select,textarea{width:100%;padding:12px;background:#111;border:1px solid #333;border-radius:8px;color:#fff;font-size:15px;margin-bottom:8px}
+input:focus,select:focus{outline:none;border-color:#FF6B35}
+textarea{min-height:80px;resize:vertical}
+.btn{padding:12px 24px;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:600;width:100%;margin-top:8px}
+.btn-primary{background:#FF6B35;color:#fff}
+.btn-primary:active{opacity:.8}
+.btn-danger{background:#c0392b;color:#fff}
+.btn-secondary{background:#2a2a2a;color:#fff;border:1px solid #444}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.tag{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;margin:2px}
+.tag-open{background:#FF6B3522;color:#FF6B35}
+.tag-scaled{background:#3498db22;color:#3498db}
+.tag-experience{background:#2ecc7122;color:#2ecc71}
+.list-item{display:flex;justify-content:space-between;align-items:center;padding:12px;background:#111;border-radius:8px;margin-bottom:6px}
+.list-item .name{font-weight:600}
+.list-item .meta{color:#888;font-size:13px}
+.del-btn{background:none;border:none;color:#c0392b;cursor:pointer;font-size:18px;padding:4px 8px}
+.pin-display{font-family:monospace;font-size:20px;letter-spacing:4px;color:#FF6B35}
+.section{margin-bottom:32px}
+.count-badge{background:#FF6B35;color:#fff;border-radius:50%;padding:2px 8px;font-size:12px;margin-left:8px}
+.tabs{display:flex;gap:4px;margin-bottom:16px;overflow-x:auto}
+.tab{padding:8px 16px;border-radius:8px;background:#1a1a1a;border:1px solid #2a2a2a;cursor:pointer;font-size:14px;white-space:nowrap}
+.tab.active{background:#FF6B35;border-color:#FF6B35}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2ecc71;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;display:none;z-index:100}
+.timer-display{background:#111;border:2px solid #FF6B35;border-radius:12px;padding:20px;text-align:center;margin-bottom:16px}
+.timer-display .status{color:#888;font-size:14px;margin-bottom:8px}
+.timer-display .time{font-size:48px;font-family:monospace;font-weight:700;color:#FF6B35}
+.timer-display .countdown{font-size:72px;font-family:monospace;font-weight:700;color:#2ecc71}
+.timer-display.stopped .time{color:#c0392b}
+.btn-start{background:#2ecc71;color:#fff;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
+.btn-start:disabled{background:#1a1a1a;color:#666;cursor:not-allowed}
+.btn-stop{background:#c0392b;color:#fff;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
+
+/* Ready Judges Panel */
+.ready-panel{background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:16px;margin-bottom:16px}
+.ready-panel h4{color:#888;font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.ready-panel .ready-count{background:#2ecc71;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px}
+.ready-panel .ready-count.empty{background:#c0392b}
+.lanes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.lane-slot{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:12px;text-align:center}
+.lane-slot .lane-num{font-size:12px;color:#888;margin-bottom:4px}
+.lane-slot .lane-judge{font-weight:600;font-size:14px}
+.lane-slot.occupied{border-color:#2ecc71;background:#2ecc7111}
+.lane-slot.occupied .lane-judge{color:#2ecc71}
+.lane-slot.empty .lane-judge{color:#555}
+
+/* Lane Assignment Panel */
+.lane-assign{background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:12px;margin-top:12px}
+.lane-assign h5{color:#888;font-size:13px;margin-bottom:10px}
+.lane-assign-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.lane-assign-slot{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:10px}
+.lane-assign-slot .lane-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.lane-assign-slot .lane-label{font-weight:600;font-size:12px}
+.lane-assign-slot .lane-status{font-size:11px;padding:2px 6px;border-radius:8px}
+.lane-assign-slot .lane-status.waiting{background:#F7C94822;color:#F7C948}
+.lane-assign-slot .lane-status.confirmed{background:#2ecc7122;color:#2ecc71}
+.lane-assign-slot .lane-status.absent{background:#c0392b22;color:#c0392b}
+.lane-assign-slot .judge-name{font-size:12px;color:#888;margin-bottom:6px}
+.lane-assign-slot select{width:100%;padding:8px;background:#0a0a0a;border:1px solid #333;border-radius:6px;color:#fff;font-size:12px}
+.lane-assign-slot .athlete-display{font-size:14px;font-weight:600;color:#FF6B35;margin-top:6px}
+.all-confirmed{color:#2ecc71;font-size:13px;font-weight:600;margin:12px 0;text-align:center}
+
+/* Team card */
+.team-card{background:#111;border-radius:8px;padding:12px;margin-bottom:6px}
+.team-card .team-name{font-size:18px;font-weight:700}
+.team-card .members{color:#888;font-size:13px;margin-top:4px}
+.team-card .team-header{display:flex;justify-content:space-between;align-items:center}
+/* Navigation Bar */
+.nav-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:12px;background:#111;border-radius:12px;border:1px solid #2a2a2a}
+.nav-link{padding:10px 16px;background:#1a1a1a;color:#fff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:600;border:1px solid #333;transition:all 0.2s}
+.nav-link:hover{background:#FF6B35;border-color:#FF6B35}
+.nav-link.current{background:#FF6B35;border-color:#FF6B35}
+</style>
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<div class="nav-bar">
+  <a href="/" class="nav-link">🏠 Home</a>
+  <a href="/admin.html" class="nav-link current">⚙️ Admin</a>
+  <a href="/regia.html" class="nav-link">🎬 Regia Camere</a>
+  <a href="/stream.html" class="nav-link">📺 Stream</a>
+  <a href="/tv.html" class="nav-link">📺 TV Monitor</a>
+  <a href="/leaderboard.html" class="nav-link">🏆 Classifica</a>
+  <a href="/judge.html?lane=1" class="nav-link">👨‍⚖️ Giudice L1</a>
+  <a href="/judge.html?lane=2" class="nav-link">👨‍⚖️ Giudice L2</a>
+  <a href="/judge.html?lane=3" class="nav-link">👨‍⚖️ Giudice L3</a>
+  <a href="/overlay.html" class="nav-link">🎨 Overlay</a>
+  <a href="/athlete.html" class="nav-link">🔍 Cerca Atleta</a>
+</div>
+
+<h1>⚙️ Admin Panel</h1>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('comp', event)">🏆 Gara</div>
+  <div class="tab" onclick="showTab('planner', event)">📅 Planner</div>
+  <div class="tab" onclick="showTab('teams', event)">👥 Team</div>
+  <div class="tab" onclick="showTab('workouts', event)">🏋️ Workout</div>
+  <div class="tab" onclick="showTab('judges', event)">📋 Giudici</div>
+  <div class="tab" onclick="showTab('scores', event)">📊 Punteggi</div>
+</div>
+
+<!-- Timer Display -->
+<div id="timer-panel" class="timer-display" style="display:none">
+  <div class="status" id="timer-status">Timer</div>
+  <div class="time" id="timer-time">00:00</div>
+  <button class="btn-stop" onclick="stopTimer()" style="margin-top:12px">⏹ STOP TIMER</button>
+</div>
+
+<!-- Competition Tab -->
+<div id="tab-comp" class="section">
+  <h2>🏆 Info Gara</h2>
+  <div class="card">
+    <input id="comp-name" placeholder="Nome gara (es: ARK Games 2026)">
+    <input id="comp-date" type="date">
+    <input id="comp-location" placeholder="Location (es: ARK CrossFit)">
+    <button class="btn btn-primary" onclick="saveCompetition()">Salva Gara</button>
+  </div>
+  <div id="comp-info"></div>
+  
+  <!-- Stream URL -->
+  <div class="card" style="margin-top:16px;">
+    <h4 style="color:#FF6B35;margin-bottom:12px">📺 Diretta Video</h4>
+    <p style="color:#888;font-size:13px;margin-bottom:12px">Inserisci URL YouTube Live o Twitch per mostrare la diretta agli spettatori</p>
+    <div class="row">
+      <input id="stream-url" placeholder="https://youtube.com/live/... o https://twitch.tv/..." style="flex:2">
+      <button class="btn btn-primary" onclick="saveStreamUrl()">📡 Attiva Stream</button>
+      <button class="btn" onclick="stopStream()" style="background:#c0392b">⏹ Stop</button>
+    </div>
+    <div id="stream-status" style="margin-top:12px;font-size:13px;color:#888"></div>
+  </div>
+</div>
+
+<!-- Planner Tab -->
+<div id="tab-planner" class="section" style="display:none">
+  <h2>📅 Timeline Gara</h2>
+  
+  <!-- Settings -->
+  <div class="card">
+    <h4 style="color:#FF6B35;margin-bottom:12px">⚙️ Impostazioni</h4>
+    <div class="row">
+      <div>
+        <label style="color:#888;font-size:12px">Pausa tra Heat (min)</label>
+        <input id="pause-between-heats" type="number" value="3" min="1" max="15">
+      </div>
+      <div>
+        <label style="color:#888;font-size:12px">Pausa tra Workout (min)</label>
+        <input id="pause-between-wods" type="number" value="5" min="1" max="30">
+      </div>
+      <div>
+        <label style="color:#888;font-size:12px">Ora Inizio</label>
+        <input id="start-time" type="time" value="09:00">
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div>
+        <label style="color:#888;font-size:12px">🍽️ Pausa Pranzo (min)</label>
+        <input id="lunch-duration" type="number" value="60" min="0" max="120">
+      </div>
+      <div>
+        <label style="color:#888;font-size:12px">Dopo WOD N°</label>
+        <input id="lunch-after-wod" type="number" value="2" min="1" max="5">
+      </div>
+      <div>
+        <label style="color:#888;font-size:12px">⚠️ Buffer Imprevisti (min)</label>
+        <input id="buffer-time" type="number" value="15" min="0" max="60">
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn btn-primary" onclick="loadOfficialTimeline()" style="background:#2ecc71">📥 Carica Timeline Ufficiale</button>
+      <button class="btn btn-secondary" onclick="generateTimeline()">🔄 Genera Nuova</button>
+    </div>
+  </div>
+  
+  <!-- Quick Actions -->
+  <div class="card" style="border-color:#F7C948">
+    <h4 style="color:#F7C948;margin-bottom:12px">⚡ Azioni Rapide</h4>
+    <div class="row">
+      <button class="btn btn-secondary" onclick="addImprevisto(5)">⚠️ +5 min Imprevisto</button>
+      <button class="btn btn-secondary" onclick="addImprevisto(10)">⚠️ +10 min Imprevisto</button>
+      <button class="btn btn-secondary" onclick="addImprevisto(0)">⚠️ Custom...</button>
+    </div>
+  </div>
+  
+  <!-- Auto Mode -->
+  <div class="card" style="border-color:#2ecc71">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <h4 style="color:#2ecc71;margin-bottom:4px">🤖 Modalità Automatica</h4>
+        <p style="color:#888;font-size:13px">Esegue heat e pause automaticamente</p>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="auto-mode" onchange="toggleAutoMode()" style="width:24px;height:24px">
+        <span id="auto-mode-label" style="font-weight:600;color:#888">OFF</span>
+      </label>
+    </div>
+    <div id="auto-status" style="margin-top:12px;padding:12px;background:#111;border-radius:8px;display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span id="auto-current">In attesa...</span>
+        <button class="btn-stop" onclick="stopAutoMode()" style="padding:8px 16px">⏹ STOP</button>
+      </div>
+      <div style="margin-top:8px">
+        <div style="background:#333;border-radius:4px;height:8px;overflow:hidden">
+          <div id="auto-progress" style="background:#2ecc71;height:100%;width:0%;transition:width 1s"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Timeline -->
+  <div class="card">
+    <h4 style="color:#FF6B35;margin-bottom:12px">📋 Timeline Completa</h4>
+    <div id="timeline-summary" style="margin-bottom:12px;padding:12px;background:#111;border-radius:8px">
+      <span style="color:#888">Genera la timeline per vedere il programma</span>
+    </div>
+    <div id="timeline-list" style="max-height:500px;overflow-y:auto"></div>
+  </div>
+  
+  <!-- Manual Controls -->
+  <div class="card">
+    <h4 style="color:#FF6B35;margin-bottom:12px">🎮 Controlli Manuali</h4>
+    <div class="row">
+      <button class="btn btn-primary" onclick="runNextHeat()">▶️ Prossima Heat</button>
+      <button class="btn btn-secondary" onclick="skipToWod()">⏭️ Salta a WOD...</button>
+    </div>
+  </div>
+</div>
+
+<!-- Teams Tab -->
+<div id="tab-teams" class="section" style="display:none">
+  <h2>👥 Team <span id="team-count" class="count-badge">0</span></h2>
+  <div class="card">
+    <input id="team-name" placeholder="🐾 Nome Team (es: 🦁 I Leoni)">
+    <div class="row">
+      <input id="team-member1" placeholder="Membro 1 (Nome Cognome)">
+      <input id="team-member2" placeholder="Membro 2 (Nome Cognome)">
+    </div>
+    <div class="row">
+      <select id="team-category">
+        <option value="">Categoria...</option>
+        <option>Open</option>
+        <option>Experience</option>
+        <option>Scaled</option>
+      </select>
+      <input id="team-number" placeholder="N° Team" type="number">
+    </div>
+    <button class="btn btn-primary" onclick="addTeam()">➕ Aggiungi Team</button>
+  </div>
+  
+  <div style="margin:12px 0">
+    <div class="tabs" id="team-filter-tabs">
+      <div class="tab active" onclick="filterTeams('all', event)">Tutti</div>
+      <div class="tab" onclick="filterTeams('Open', event)">🔥 Open</div>
+      <div class="tab" onclick="filterTeams('Experience', event)">🌱 Experience</div>
+      <div class="tab" onclick="filterTeams('Scaled', event)">💪 Scaled</div>
+    </div>
+  </div>
+  <div id="team-list"></div>
+</div>
+
+<!-- Workouts Tab -->
+<div id="tab-workouts" class="section" style="display:none">
+  <h2>🏋️ Workout</h2>
+  <div class="card">
+    <input id="wod-name" placeholder="Nome workout (es: WOD 1)">
+    <div class="row">
+      <select id="wod-type">
+        <option>AMRAP</option>
+        <option>For Time</option>
+        <option>EMOM</option>
+      </select>
+      <input id="wod-duration" placeholder="Durata (min)" type="number">
+    </div>
+    <input id="wod-cap" placeholder="Time cap in minuti (solo For Time)" type="number">
+    <textarea id="wod-movements" placeholder="Movimenti (uno per riga)&#10;es: 10 Burpees&#10;15 Box Jumps&#10;20 Wall Balls"></textarea>
+    <select id="wod-categories" multiple style="min-height:80px">
+      <option selected>Open</option>
+      <option selected>Experience</option>
+      <option selected>Scaled</option>
+    </select>
+    <p style="color:#888;font-size:12px;margin-bottom:8px">Tieni premuto Ctrl/Cmd per selezionare più categorie</p>
+    <button class="btn btn-primary" onclick="addWorkout()">➕ Aggiungi Workout</button>
+  </div>
+  <div id="workout-list"></div>
+</div>
+
+<!-- Judges Tab -->
+<div id="tab-judges" class="section" style="display:none">
+  <h2>📋 Giudici <span id="judge-count" class="count-badge">0</span></h2>
+  <div class="card">
+    <input id="judge-name" placeholder="Nome giudice">
+    <button class="btn btn-primary" onclick="addJudge()">➕ Aggiungi Giudice</button>
+  </div>
+  <div id="judge-list"></div>
+  
+  <!-- Lane Status Panel -->
+  <h2 style="margin-top:24px">🎯 Stato Lane</h2>
+  <div class="card">
+    <div class="lanes-grid" id="laneStatusGrid">
+      <div class="lane-slot" id="ls1"><div class="lane-num">LANE 1</div><div class="lane-judge">—</div></div>
+      <div class="lane-slot" id="ls2"><div class="lane-num">LANE 2</div><div class="lane-judge">—</div></div>
+      <div class="lane-slot" id="ls3"><div class="lane-num">LANE 3</div><div class="lane-judge">—</div></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn btn-danger" onclick="resetLanes()">🔄 Reset Tutte le Lane</button>
+      <button class="btn btn-secondary" onclick="resetLiveScores()">📊 Reset Live Scores</button>
+    </div>
+  </div>
+  
+  <!-- Auto Assignment Panel -->
+  <h2 style="margin-top:24px">🚀 Assegnazione Automatica</h2>
+  <div class="card">
+    <p style="color:#888;font-size:13px;margin-bottom:12px">Ordine: 🌱 Experience → 💪 Scaled → 🔥 Open</p>
+    <div id="queue-preview" style="max-height:150px;overflow-y:auto;margin-bottom:12px"></div>
+    <div class="row">
+      <button class="btn btn-primary" onclick="autoAssignNext()">🎯 Assegna Prossimi 3 Team</button>
+      <button class="btn btn-secondary" onclick="resetQueue()">🔄 Reset Coda</button>
+    </div>
+    <p id="queue-status" style="color:#2ecc71;font-size:13px;margin-top:8px;text-align:center"></p>
+  </div>
+</div>
+
+<!-- Scores Tab -->
+<div id="tab-scores" class="section" style="display:none">
+  <h2>📊 Gestione Punteggi</h2>
+  
+  <!-- Selettori -->
+  <div class="card">
+    <div class="row">
+      <select id="score-category" onchange="populateScoreDropdowns(); loadScoresTable()">
+        <option value="Experience">🌱 Experience</option>
+        <option value="Scaled">💪 Scaled</option>
+        <option value="Open">🔥 Open</option>
+      </select>
+      <select id="score-workout" onchange="loadScoresTable()">
+        <option value="">-- Tutti i workout --</option>
+      </select>
+    </div>
+  </div>
+  
+  <!-- Inserimento Rapido -->
+  <div class="card">
+    <h4 style="color:#FF6B35;margin-bottom:12px">➕ Inserimento Rapido</h4>
+    <div class="row">
+      <select id="quick-team"><option value="">Team...</option></select>
+      <select id="quick-workout"><option value="">Workout...</option></select>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <input id="quick-score" placeholder="Score (reps o mm:ss)">
+      <button class="btn btn-primary" onclick="quickAddScore()" style="width:auto;padding:12px 20px">💾 Salva</button>
+    </div>
+  </div>
+  
+  <!-- Tabella Scores -->
+  <div class="card" style="overflow-x:auto">
+    <h4 style="color:#FF6B35;margin-bottom:12px">📋 Punteggi <span id="scores-count" style="color:#888;font-size:12px"></span></h4>
+    <table id="scores-table" style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:#1a1a1a;text-align:left">
+          <th style="padding:10px">#</th>
+          <th style="padding:10px">Team</th>
+          <th style="padding:10px">Score</th>
+          <th style="padding:10px">Rank</th>
+          <th style="padding:10px">Override</th>
+          <th style="padding:10px">Azioni</th>
+        </tr>
+      </thead>
+      <tbody id="scores-tbody"></tbody>
+    </table>
+  </div>
+  
+  <!-- Azioni Globali -->
+  <div class="card">
+    <h4 style="color:#FF6B35;margin-bottom:12px">⚙️ Azioni Globali</h4>
+    <button class="btn btn-secondary" onclick="recalcLeaderboard()">🔄 Ricalcola Leaderboard</button>
+    <div class="row" style="margin-top:8px">
+      <select id="reset-workout-select"><option value="">Reset singolo workout...</option></select>
+      <button class="btn btn-danger" onclick="resetSingleWorkout()" style="width:auto">🗑️ Reset</button>
+    </div>
+    <button class="btn btn-danger" onclick="resetScores()" style="margin-top:8px">🗑️ Reset TUTTI i Punteggi</button>
+  </div>
+  
+  <!-- Anteprima Classifica per WOD -->
+  <div class="card">
+    <h4 style="color:#FF6B35;margin-bottom:12px">👁️ Classifica per Workout</h4>
+    <div id="leaderboard-preview" style="max-height:300px;overflow-y:auto"></div>
+  </div>
+  
+  <!-- Classifica Totale -->
+  <div class="card" style="border-color:#F7C948">
+    <h4 style="color:#F7C948;margin-bottom:12px">🏆 CLASSIFICA TOTALE</h4>
+    <p style="color:#888;font-size:12px;margin-bottom:12px">Somma delle posizioni in ogni WOD (meno punti = meglio)</p>
+    <div id="total-leaderboard" style="max-height:400px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { db, ref, set, get, push, onValue, update, remove, child, generatePin, generateId, PATHS, getSyncedTime, syncClock } 
+  from './firebase-config.js';
+
+// Sync clock on page load
+syncClock();
+
+let currentFilter = 'all';
+
+// ========== TABS ==========
+window.showTab = function(tab, evt) {
+  document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+  document.getElementById('tab-' + tab).style.display = 'block';
+  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  // Find clicked tab or fallback to selector
+  const clickedTab = evt ? evt.target : document.querySelector(`.tabs .tab[onclick*="'${tab}'"]`);
+  if (clickedTab) clickedTab.classList.add('active');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2500);
+}
+
+// ========== COMPETITION ==========
+window.saveCompetition = async function() {
+  const name = document.getElementById('comp-name').value.trim();
+  const date = document.getElementById('comp-date').value;
+  const location = document.getElementById('comp-location').value.trim();
+  if (!name) return toast('Inserisci il nome!');
+  
+  await set(ref(db, PATHS.competition + '/info'), { name, date, location, createdAt: Date.now() });
+  toast('✅ Gara salvata!');
+}
+
+onValue(ref(db, PATHS.competition + '/info'), (snap) => {
+  const info = snap.val();
+  if (info) {
+    document.getElementById('comp-name').value = info.name || '';
+    document.getElementById('comp-date').value = info.date || '';
+    document.getElementById('comp-location').value = info.location || '';
+    document.getElementById('comp-info').innerHTML = `<div class="card" style="border-color:#2ecc71"><b>${info.name}</b> — ${info.date || 'data TBD'} — ${info.location || ''}</div>`;
+  }
+});
+
+// ========== STREAM ==========
+window.saveStreamUrl = async function() {
+  const url = document.getElementById('stream-url').value.trim();
+  if (!url) return toast('Inserisci URL YouTube o Twitch!');
+  
+  await set(ref(db, PATHS.timer + '/streamUrl'), url);
+  toast('📺 Stream attivato! Gli spettatori vedranno la diretta');
+}
+
+window.stopStream = async function() {
+  await set(ref(db, PATHS.timer + '/streamUrl'), null);
+  document.getElementById('stream-url').value = '';
+  toast('⏹ Stream disattivato');
+}
+
+onValue(ref(db, PATHS.timer + '/streamUrl'), (snap) => {
+  const url = snap.val();
+  const statusEl = document.getElementById('stream-status');
+  const inputEl = document.getElementById('stream-url');
+  
+  if (url) {
+    inputEl.value = url;
+    statusEl.innerHTML = '🟢 <b>LIVE</b> — Gli spettatori su /watch.html vedono la diretta';
+    statusEl.style.color = '#2ecc71';
+  } else {
+    statusEl.innerHTML = '⚫ Stream non attivo';
+    statusEl.style.color = '#888';
+  }
+});
+
+// ========== TEAMS ==========
+window.addTeam = async function() {
+  const teamName = document.getElementById('team-name').value.trim();
+  const member1 = document.getElementById('team-member1').value.trim();
+  const member2 = document.getElementById('team-member2').value.trim();
+  const category = document.getElementById('team-category').value;
+  const number = document.getElementById('team-number').value;
+  
+  if (!teamName || !member1 || !member2 || !category) {
+    return toast('Tutti i campi sono obbligatori!');
+  }
+  
+  const id = generateId();
+  await set(ref(db, PATHS.athletes + '/' + id), {
+    teamName,
+    member1,
+    member2,
+    name: `${member1} & ${member2}`, // For compatibility
+    category,
+    number: number || null,
+    id,
+    createdAt: Date.now()
+  });
+  
+  document.getElementById('team-name').value = '';
+  document.getElementById('team-member1').value = '';
+  document.getElementById('team-member2').value = '';
+  document.getElementById('team-number').value = '';
+  toast('✅ Team aggiunto!');
+}
+
+window.deleteTeam = async function(id) {
+  if (confirm('Eliminare questo team?')) {
+    await remove(ref(db, PATHS.athletes + '/' + id));
+    toast('Team eliminato');
+  }
+}
+
+window.filterTeams = function(cat, evt) {
+  currentFilter = cat;
+  document.querySelectorAll('#team-filter-tabs .tab').forEach(t => t.classList.remove('active'));
+  const clickedTab = evt ? evt.target : document.querySelector(`#team-filter-tabs .tab[onclick*="'${cat}'"]`);
+  if (clickedTab) clickedTab.classList.add('active');
+  renderTeams(window._teams);
+}
+
+function renderTeams(teams) {
+  window._teams = teams;
+  const list = document.getElementById('team-list');
+  if (!teams) { list.innerHTML = '<p style="color:#888">Nessun team</p>'; return; }
+  
+  const arr = Object.values(teams).filter(t => currentFilter === 'all' || t.category === currentFilter);
+  arr.sort((a, b) => (a.number || 999) - (b.number || 999));
+  
+  document.getElementById('team-count').textContent = Object.keys(teams).length;
+  
+  list.innerHTML = arr.map(t => `
+    <div class="team-card">
+      <div class="team-header">
+        <div>
+          <div class="team-name">${t.number ? '#' + t.number + ' ' : ''}${t.teamName || t.name}</div>
+          <div class="members">${t.member1 || ''} & ${t.member2 || ''}</div>
+          <span class="tag tag-${t.category.toLowerCase()}">${t.category}</span>
+        </div>
+        <button class="del-btn" onclick="deleteTeam('${t.id}')">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+onValue(ref(db, PATHS.athletes), (snap) => renderTeams(snap.val()));
+
+// ========== WORKOUTS ==========
+window.addWorkout = async function() {
+  const name = document.getElementById('wod-name').value.trim();
+  const type = document.getElementById('wod-type').value;
+  const duration = document.getElementById('wod-duration').value;
+  const cap = document.getElementById('wod-cap').value;
+  const movements = document.getElementById('wod-movements').value.trim();
+  const catSelect = document.getElementById('wod-categories');
+  const categories = Array.from(catSelect.selectedOptions).map(o => o.value);
+  
+  if (!name || !duration) return toast('Nome e durata obbligatori!');
+  
+  const id = generateId();
+  await set(ref(db, PATHS.workouts + '/' + id), {
+    name, type, duration: Number(duration), cap: cap ? Number(cap) : null,
+    movements: movements.split('\n').filter(m => m.trim()),
+    categories, id, order: Date.now()
+  });
+  
+  document.getElementById('wod-name').value = '';
+  document.getElementById('wod-duration').value = '';
+  document.getElementById('wod-cap').value = '';
+  document.getElementById('wod-movements').value = '';
+  toast('✅ Workout aggiunto!');
+}
+
+window.deleteWorkout = async function(id) {
+  if (confirm('Eliminare questo workout?')) {
+    await remove(ref(db, PATHS.workouts + '/' + id));
+    toast('Workout eliminato');
+  }
+}
+
+let workoutsCache = {};
+let readyJudgesCache = {};
+let laneStatusCache = {};
+let laneAthletesCache = {};
+let teamsCache = {};
+
+function renderWorkouts() {
+  const list = document.getElementById('workout-list');
+  if (!workoutsCache || Object.keys(workoutsCache).length === 0) { 
+    list.innerHTML = '<p style="color:#888">Nessun workout</p>'; 
+    return; 
+  }
+  
+  const arr = Object.values(workoutsCache).sort((a, b) => a.order - b.order);
+  list.innerHTML = arr.map(w => {
+    // Get judges ready for THIS workout
+    const wodJudges = Object.values(readyJudgesCache).filter(j => j.wodId === w.id);
+    const judgesCount = wodJudges.length;
+    
+    // Get teams for this workout's categories
+    const wodTeams = Object.values(teamsCache).filter(t => 
+      (w.categories || []).includes(t.category)
+    ).sort((a, b) => (a.number || 999) - (b.number || 999));
+    
+    // Check lane statuses
+    let allConfirmed = true;
+    let lanesWithJudges = 0;
+    wodJudges.forEach(j => {
+      lanesWithJudges++;
+      const status = laneStatusCache[j.lane];
+      if (!status || status.status !== 'confirmed') {
+        allConfirmed = false;
+      }
+    });
+    if (lanesWithJudges === 0) allConfirmed = false;
+    
+    // Build lanes assignment panel
+    let lanesHtml = '';
+    if (judgesCount > 0) {
+      lanesHtml = '<div class="lane-assign">';
+      lanesHtml += '<h5>📋 Assegna team alle lane</h5>';
+      if (allConfirmed) {
+        lanesHtml += '<div class="all-confirmed">✅ Tutti i team confermati - Pronto per START!</div>';
+      }
+      lanesHtml += '<div class="lane-assign-grid">';
+      
+      for (let lane = 1; lane <= 3; lane++) {
+        const judgeInLane = wodJudges.find(j => j.lane === lane);
+        const laneStatus = laneStatusCache[lane] || {};
+        const laneTeam = laneAthletesCache[lane] || {};
+        
+        if (judgeInLane) {
+          const statusClass = laneStatus.status || 'waiting';
+          const statusLabel = statusClass === 'confirmed' ? '✅ OK' : 
+                             statusClass === 'absent' ? '❌ Assente' : '⏳ Attesa';
+          
+          lanesHtml += `<div class="lane-assign-slot">
+            <div class="lane-header">
+              <span class="lane-label">LANE ${lane}</span>
+              <span class="lane-status ${statusClass}">${statusLabel}</span>
+            </div>
+            <div class="judge-name">👤 ${judgeInLane.name}</div>
+            <select onchange="assignTeam(${lane}, this.value, '${w.id}')">
+              <option value="">-- Seleziona team --</option>
+              ${wodTeams.map(t => `<option value="${t.id}" ${laneTeam.athleteId === t.id ? 'selected' : ''}>${t.number ? '#' + t.number + ' ' : ''}${t.teamName || t.name}</option>`).join('')}
+            </select>
+            ${laneTeam.athleteName ? `<div class="athlete-display">${laneTeam.teamName || laneTeam.athleteName}</div>` : ''}
+          </div>`;
+        } else {
+          lanesHtml += `<div class="lane-assign-slot" style="opacity:0.4">
+            <div class="lane-header">
+              <span class="lane-label">LANE ${lane}</span>
+            </div>
+            <div class="judge-name" style="color:#555">Nessun giudice</div>
+          </div>`;
+        }
+      }
+      lanesHtml += '</div></div>';
+    }
+    
+    return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <b>${w.name}</b> — <span style="color:#FF6B35">${w.type}</span> ${w.timeCap || w.duration || ''}min
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-start" onclick="startWorkout('${w.id}')" ${!allConfirmed ? 'disabled title="Attendi conferma team"' : ''} style="${allConfirmed ? 'background:#2ecc71' : ''}">▶️ START${judgesCount > 0 ? ' (' + judgesCount + ')' : ''}</button>
+          <button class="del-btn" onclick="deleteWorkout('${w.id}')">✕</button>
+        </div>
+      </div>
+      <div style="margin-top:8px;color:#aaa;font-size:13px;white-space:pre-line">
+        ${w.description || (w.movements || []).map(m => '• ' + m).join('\n')}
+      </div>
+      <div style="margin-top:6px">
+        ${(w.categories || []).map(c => '<span class="tag tag-' + c.toLowerCase() + '">' + c + '</span>').join(' ')}
+      </div>
+      ${lanesHtml}
+    </div>
+  `}).join('');
+}
+
+window.assignTeam = async function(lane, teamId, wodId) {
+  if (!teamId) {
+    await set(ref(db, PATHS.timer + '/laneAthletes/' + lane), null);
+    return;
+  }
+  
+  const team = teamsCache[teamId];
+  if (!team) return;
+  
+  await set(ref(db, PATHS.timer + '/laneAthletes/' + lane), {
+    athleteId: team.id,
+    athleteName: team.teamName || team.name,
+    teamName: team.teamName,
+    member1: team.member1,
+    member2: team.member2,
+    athleteNumber: team.number || null,
+    category: team.category,
+    wodId: wodId
+  });
+  
+  // Reset lane status to waiting when team changes
+  await update(ref(db, PATHS.timer + '/laneStatus/' + lane), {
+    status: 'waiting'
+  });
+  
+  toast('Team assegnato a Lane ' + lane);
+}
+
+// ========== JUDGES ==========
+window.addJudge = async function() {
+  const name = document.getElementById('judge-name').value.trim();
+  if (!name) return toast('Inserisci il nome!');
+  
+  const id = generateId();
+  const pin = generatePin();
+  await set(ref(db, PATHS.judges + '/' + id), { name, pin, id, createdAt: Date.now() });
+  
+  document.getElementById('judge-name').value = '';
+  toast('✅ Giudice aggiunto! PIN: ' + pin);
+}
+
+window.deleteJudge = async function(id) {
+  if (confirm('Eliminare questo giudice?')) {
+    await remove(ref(db, PATHS.judges + '/' + id));
+    toast('Giudice eliminato');
+  }
+}
+
+onValue(ref(db, PATHS.judges), (snap) => {
+  const judges = snap.val();
+  const list = document.getElementById('judge-list');
+  document.getElementById('judge-count').textContent = judges ? Object.keys(judges).length : 0;
+  if (!judges) { list.innerHTML = '<p style="color:#888">Nessun giudice</p>'; return; }
+  
+  list.innerHTML = Object.values(judges).map(j => `
+    <div class="list-item">
+      <div>
+        <div class="name">${j.name}</div>
+        <div class="pin-display">${j.pin}</div>
+      </div>
+      <button class="del-btn" onclick="deleteJudge('${j.id}')">✕</button>
+    </div>
+  `).join('');
+});
+
+// ========== SCORES / LEADERBOARD ==========
+window.recalcLeaderboard = async function() {
+  toast('🔄 Ricalcolo in corso...');
+  const [teamsSnap, scoresSnap, wodsSnap] = await Promise.all([
+    get(ref(db, PATHS.athletes)),
+    get(ref(db, PATHS.scores)),
+    get(ref(db, PATHS.workouts))
+  ]);
+  
+  const teams = teamsSnap.val() || {};
+  const scores = scoresSnap.val() || {};
+  const wods = wodsSnap.val() || {};
+  const wodList = Object.values(wods).sort((a, b) => a.order - b.order);
+  
+  const leaderboard = {};
+  
+  for (const cat of ['Open', 'Experience', 'Scaled']) {
+    const catTeams = Object.values(teams).filter(t => t.category === cat);
+    const rankings = {};
+    
+    catTeams.forEach(team => {
+      let totalPoints = 0;
+      const wodScores = {};
+      
+      wodList.forEach((wod, idx) => {
+        const score = scores[team.id]?.[wod.id];
+        wodScores[wod.id] = score || null;
+      });
+      
+      rankings[team.id] = {
+        team: team,
+        wodScores,
+        totalPoints: 0
+      };
+    });
+    
+    // Rank per workout (rispetta override manuali)
+    wodList.forEach(wod => {
+      const withScores = Object.values(rankings).filter(r => r.wodScores[wod.id]);
+      
+      if (wod.type === 'AMRAP' || wod.type === 'EMOM') {
+        withScores.sort((a, b) => (b.wodScores[wod.id]?.reps || 0) - (a.wodScores[wod.id]?.reps || 0));
+      } else {
+        withScores.sort((a, b) => (a.wodScores[wod.id]?.time || 9999) - (b.wodScores[wod.id]?.time || 9999));
+      }
+      
+      withScores.forEach((r, idx) => {
+        const score = r.wodScores[wod.id];
+        const rank = score.rankOverride ? (score.manualRank || idx + 1) : (idx + 1);
+        score.rank = rank;
+        r.totalPoints += rank;
+      });
+    });
+    
+    leaderboard[cat] = Object.values(rankings).sort((a, b) => {
+      if (a.totalPoints === 0 && b.totalPoints === 0) return 0;
+      if (a.totalPoints === 0) return 1;
+      if (b.totalPoints === 0) return -1;
+      return a.totalPoints - b.totalPoints;
+    });
+  }
+  
+  await set(ref(db, PATHS.leaderboard), leaderboard);
+  toast('✅ Leaderboard aggiornata!');
+}
+
+window.resetScores = async function() {
+  if (confirm('⚠️ ATTENZIONE: Eliminare TUTTI i punteggi?')) {
+    if (confirm('Sei sicuro? Non si può annullare!')) {
+      await remove(ref(db, PATHS.scores));
+      await remove(ref(db, PATHS.leaderboard));
+      toast('Punteggi resettati');
+      loadScoresTable();
+    }
+  }
+}
+
+window.resetSingleWorkout = async function() {
+  const wodId = document.getElementById('reset-workout-select').value;
+  if (!wodId) return toast('Seleziona un workout');
+  if (!confirm('Eliminare tutti i punteggi per questo workout?')) return;
+  
+  const scoresSnap = await get(ref(db, PATHS.scores));
+  const scores = scoresSnap.val() || {};
+  
+  for (const teamId of Object.keys(scores)) {
+    if (scores[teamId][wodId]) {
+      await remove(ref(db, PATHS.scores + '/' + teamId + '/' + wodId));
+    }
+  }
+  toast('Punteggi workout resettati');
+  loadScoresTable();
+}
+
+// ========== SCORES TABLE MANAGEMENT ==========
+let scoresCache = {};
+
+function populateScoreDropdowns() {
+  const cat = document.getElementById('score-category')?.value || 'Experience';
+  const filteredWods = Object.values(workoutsCache)
+    .filter(w => w.categories && w.categories.includes(cat))
+    .sort((a,b) => a.order - b.order);
+  
+  const wodOptions = filteredWods.map(w => `<option value="${w.id}">${w.name} (${w.type})</option>`).join('');
+  
+  document.getElementById('score-workout').innerHTML = '<option value="">-- Tutti --</option>' + wodOptions;
+  document.getElementById('quick-workout').innerHTML = '<option value="">Workout...</option>' + wodOptions;
+  
+  // Reset workout keeps all workouts
+  const allWodOptions = Object.values(workoutsCache).sort((a,b) => a.order - b.order)
+    .map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+  document.getElementById('reset-workout-select').innerHTML = '<option value="">Seleziona...</option>' + allWodOptions;
+}
+
+function populateTeamDropdown() {
+  const cat = document.getElementById('score-category').value;
+  const teams = Object.values(teamsCache)
+    .filter(t => t.category === cat)
+    .sort((a,b) => (a.number || 999) - (b.number || 999));
+  
+  const options = teams.map(t => `<option value="${t.id}">${t.number ? '#' + t.number + ' ' : ''}${t.teamName || t.name}</option>`).join('');
+  document.getElementById('quick-team').innerHTML = '<option value="">Team...</option>' + options;
+}
+
+window.loadScoresTable = function() {
+  const catEl = document.getElementById('score-category');
+  const wodEl = document.getElementById('score-workout');
+  const tbody = document.getElementById('scores-tbody');
+  
+  // Skip if elements not ready
+  if (!catEl || !tbody || !wodEl) return;
+  
+  const cat = catEl.value;
+  const wodId = wodEl.value;
+  
+  populateTeamDropdown();
+  
+  const teams = Object.values(teamsCache)
+    .filter(t => t.category === cat)
+    .sort((a,b) => (a.number || 999) - (b.number || 999));
+  
+  // Filter workouts by selected category
+  const wods = wodId ? [workoutsCache[wodId]] : Object.values(workoutsCache)
+    .filter(w => w.categories && w.categories.includes(cat))
+    .sort((a,b) => a.order - b.order);
+  
+  if (wods.length === 0 || teams.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;color:#888;text-align:center">Nessun dato</td></tr>';
+    return;
+  }
+  
+  let html = '';
+  let count = 0;
+  
+  teams.forEach(team => {
+    wods.forEach(wod => {
+      if (!wod) return;
+      const score = scoresCache[team.id]?.[wod.id];
+      const scoreDisplay = score ? (wod.type === 'For Time' ? formatTime(score.time || score.finalTime || 0) : (score.reps || 0) + ' reps') : '-';
+      const hasOverride = score?.rankOverride;
+      const rank = hasOverride ? (score.manualRank || '-') : (score?._rank || '-');
+      
+      if (score) count++;
+      
+      html += `<tr style="border-bottom:1px solid #2a2a2a">
+        <td style="padding:8px">${team.number || '-'}</td>
+        <td style="padding:8px">${team.teamName || team.name}<br><span style="color:#888;font-size:11px">${wod.name}</span></td>
+        <td style="padding:8px">
+          <input type="text" value="${score ? (wod.type === 'For Time' ? formatTime(score.time || 0) : score.reps || 0) : ''}" 
+            style="width:80px;padding:6px;background:#0a0a0a;border:1px solid #333;border-radius:4px;color:#fff;font-size:12px"
+            onchange="updateScore('${team.id}', '${wod.id}', this.value, '${wod.type}')">
+        </td>
+        <td style="padding:8px;color:${hasOverride ? '#F7C948' : '#888'}">${rank}${hasOverride ? ' ✏️' : ''}</td>
+        <td style="padding:8px">
+          <input type="checkbox" ${hasOverride ? 'checked' : ''} onchange="toggleOverride('${team.id}', '${wod.id}', this.checked)">
+          ${hasOverride ? `<input type="number" value="${score?.manualRank || ''}" style="width:40px;padding:4px;background:#0a0a0a;border:1px solid #333;border-radius:4px;color:#F7C948;font-size:12px;margin-left:4px" onchange="setManualRank('${team.id}', '${wod.id}', this.value)">` : ''}
+        </td>
+        <td style="padding:8px">
+          <button onclick="deleteScore('${team.id}', '${wod.id}')" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:16px">🗑️</button>
+        </td>
+      </tr>`;
+    });
+  });
+  
+  tbody.innerHTML = html || '<tr><td colspan="6" style="padding:20px;color:#888;text-align:center">Nessun punteggio</td></tr>';
+  document.getElementById('scores-count').textContent = `(${count} punteggi)`;
+  
+  updateLeaderboardPreview();
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+function parseTime(str) {
+  if (str.includes(':')) {
+    const [m, s] = str.split(':').map(Number);
+    return m * 60 + (s || 0);
+  }
+  return parseInt(str) || 0;
+}
+
+window.updateScore = async function(teamId, wodId, value, type) {
+  if (!value) return;
+  
+  const team = teamsCache[teamId];
+  const wod = workoutsCache[wodId];
+  if (!team || !wod) return;
+  
+  const existing = scoresCache[teamId]?.[wodId] || {};
+  const scoreData = {
+    ...existing,
+    athleteId: teamId,
+    athleteName: team.teamName || team.name,
+    teamName: team.teamName,
+    category: team.category,
+    workoutId: wodId,
+    workoutName: wod.name,
+    workoutType: type,
+    editedBy: 'admin',
+    editedAt: Date.now()
+  };
+  
+  if (type === 'For Time') {
+    scoreData.time = parseTime(value);
+    scoreData.finalTime = parseTime(value);
+  } else {
+    scoreData.reps = parseInt(value) || 0;
+  }
+  
+  await set(ref(db, PATHS.scores + '/' + teamId + '/' + wodId), scoreData);
+  toast('Score aggiornato');
+}
+
+window.toggleOverride = async function(teamId, wodId, checked) {
+  await update(ref(db, PATHS.scores + '/' + teamId + '/' + wodId), {
+    rankOverride: checked,
+    editedBy: 'admin',
+    editedAt: Date.now()
+  });
+  loadScoresTable();
+}
+
+window.setManualRank = async function(teamId, wodId, rank) {
+  await update(ref(db, PATHS.scores + '/' + teamId + '/' + wodId), {
+    manualRank: parseInt(rank) || 1,
+    editedBy: 'admin',
+    editedAt: Date.now()
+  });
+  toast('Rank manuale impostato');
+}
+
+window.deleteScore = async function(teamId, wodId) {
+  if (!confirm('Eliminare questo punteggio?')) return;
+  await remove(ref(db, PATHS.scores + '/' + teamId + '/' + wodId));
+  toast('Punteggio eliminato');
+}
+
+window.quickAddScore = async function() {
+  const teamId = document.getElementById('quick-team').value;
+  const wodId = document.getElementById('quick-workout').value;
+  const value = document.getElementById('quick-score').value;
+  
+  if (!teamId || !wodId || !value) return toast('Compila tutti i campi');
+  
+  const wod = workoutsCache[wodId];
+  await updateScore(teamId, wodId, value, wod.type);
+  document.getElementById('quick-score').value = '';
+  toast('Score aggiunto');
+}
+
+function updateLeaderboardPreview() {
+  const cat = document.getElementById('score-category').value;
+  const preview = document.getElementById('leaderboard-preview');
+  
+  const teams = Object.values(teamsCache).filter(t => t.category === cat);
+  // Filter workouts by category
+  const wods = Object.values(workoutsCache)
+    .filter(w => w.categories && w.categories.includes(cat))
+    .sort((a,b) => a.order - b.order);
+  
+  if (wods.length === 0) {
+    preview.innerHTML = '<p style="color:#888">Nessun workout per questa categoria</p>';
+    return;
+  }
+  
+  const rankings = teams.map(team => {
+    let totalPoints = 0;
+    const wodResults = {};
+    
+    wods.forEach(wod => {
+      const score = scoresCache[team.id]?.[wod.id];
+      if (score) {
+        wodResults[wod.id] = score;
+      }
+    });
+    
+    return { team, wodResults, totalPoints: 0 };
+  });
+  
+  wods.forEach(wod => {
+    const withScores = rankings.filter(r => r.wodResults[wod.id]);
+    
+    if (wod.type === 'For Time') {
+      withScores.sort((a, b) => (a.wodResults[wod.id].time || 9999) - (b.wodResults[wod.id].time || 9999));
+    } else {
+      withScores.sort((a, b) => (b.wodResults[wod.id].reps || 0) - (a.wodResults[wod.id].reps || 0));
+    }
+    
+    withScores.forEach((r, idx) => {
+      const score = r.wodResults[wod.id];
+      const rank = score.rankOverride ? (score.manualRank || idx + 1) : (idx + 1);
+      score._rank = rank;
+      r.totalPoints += rank;
+    });
+  });
+  
+  rankings.sort((a, b) => {
+    if (a.totalPoints === 0 && b.totalPoints === 0) return 0;
+    if (a.totalPoints === 0) return 1;
+    if (b.totalPoints === 0) return -1;
+    return a.totalPoints - b.totalPoints;
+  });
+  
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html += '<tr style="background:#1a1a1a"><th style="padding:6px">Pos</th><th style="padding:6px">Team</th>';
+  wods.forEach(w => html += `<th style="padding:6px">${w.name}</th>`);
+  html += '<th style="padding:6px">Tot</th></tr>';
+  
+  rankings.slice(0, 10).forEach((r, idx) => {
+    if (r.totalPoints === 0) return;
+    html += `<tr style="border-bottom:1px solid #2a2a2a">`;
+    html += `<td style="padding:6px;font-weight:bold;color:${idx < 3 ? '#F7C948' : '#fff'}">${idx + 1}</td>`;
+    html += `<td style="padding:6px">${r.team.teamName || r.team.name}</td>`;
+    wods.forEach(w => {
+      const s = r.wodResults[w.id];
+      html += `<td style="padding:6px;color:#888">${s ? (s._rank || '-') : '-'}</td>`;
+    });
+    html += `<td style="padding:6px;font-weight:bold;color:#FF6B35">${r.totalPoints}</td>`;
+    html += '</tr>';
+  });
+  
+  html += '</table>';
+  preview.innerHTML = html || '<p style="color:#888">Nessun dato</p>';
+  
+  // Update total leaderboard
+  updateTotalLeaderboard(cat, rankings, wods);
+}
+
+function updateTotalLeaderboard(cat, rankings, wods) {
+  const container = document.getElementById('total-leaderboard');
+  if (!container) return;
+  
+  // Filter out teams with no scores
+  const withScores = rankings.filter(r => r.totalPoints > 0);
+  
+  if (withScores.length === 0) {
+    container.innerHTML = '<p style="color:#888;text-align:center">Nessun punteggio registrato per ' + cat + '</p>';
+    return;
+  }
+  
+  // Medal emojis
+  const medals = ['🥇', '🥈', '🥉'];
+  
+  let html = '<div style="display:flex;flex-direction:column;gap:8px">';
+  
+  withScores.forEach((r, idx) => {
+    const medal = idx < 3 ? medals[idx] : '';
+    const isTop3 = idx < 3;
+    const bgColor = isTop3 ? '#1a1a1a' : '#111';
+    const borderColor = idx === 0 ? '#F7C948' : idx === 1 ? '#C0C0C0' : idx === 2 ? '#CD7F32' : '#2a2a2a';
+    
+    html += `<div style="background:${bgColor};border:1px solid ${borderColor};border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px">`;
+    html += `<div style="font-size:${isTop3 ? '24px' : '18px'};font-weight:bold;width:40px;text-align:center;color:${isTop3 ? '#F7C948' : '#888'}">${medal || (idx + 1)}</div>`;
+    html += `<div style="flex:1">`;
+    html += `<div style="font-weight:bold;font-size:${isTop3 ? '16px' : '14px'}">${r.team.teamName || r.team.name}</div>`;
+    html += `<div style="color:#888;font-size:12px">`;
+    
+    // Show individual WOD ranks
+    const wodRanks = wods.map(w => {
+      const s = r.wodResults[w.id];
+      return s ? s._rank : '-';
+    }).join(' + ');
+    html += wodRanks;
+    
+    html += `</div></div>`;
+    html += `<div style="font-size:${isTop3 ? '20px' : '16px'};font-weight:bold;color:#FF6B35">${r.totalPoints} pts</div>`;
+    html += '</div>';
+  });
+  
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// Listen for scores changes
+onValue(ref(db, PATHS.scores), (snap) => {
+  scoresCache = snap.val() || {};
+  loadScoresTable();
+});
+
+// Initialize dropdowns when workouts load
+onValue(ref(db, PATHS.workouts), (snap) => {
+  workoutsCache = snap.val() || {};
+  populateScoreDropdowns();
+  renderWorkouts();
+}, { onlyOnce: false });
+
+// ========== TIMER SYNC ==========
+let timerInterval = null;
+
+window.startWorkout = async function(wodId) {
+  const wod = workoutsCache[wodId];
+  if (!wod) return toast('Workout non trovato!');
+  
+  const wodJudges = Object.values(readyJudgesCache).filter(j => j.wodId === wodId);
+  if (wodJudges.length === 0) return toast('⚠️ Nessun giudice pronto per questo workout!');
+  
+  let allConfirmed = true;
+  wodJudges.forEach(j => {
+    const status = laneStatusCache[j.lane];
+    if (!status || status.status !== 'confirmed') {
+      allConfirmed = false;
+    }
+  });
+  
+  if (!allConfirmed) {
+    return toast('⚠️ Non tutti i team sono stati confermati!');
+  }
+  
+  const startAt = getSyncedTime() + 10000;
+  await update(ref(db, PATHS.timer), {
+    activeWorkout: wodId,
+    wodName: wod.name,
+    status: 'countdown',
+    startAt: startAt,
+    duration: wod.duration,
+    cap: wod.cap || null
+  });
+  toast('⏱️ Countdown avviato per ' + wod.name + ' (' + wodJudges.length + ' giudici)');
+}
+
+window.stopTimer = async function() {
+  await set(ref(db, PATHS.timer + '/status'), 'stopped');
+  toast('⏹ Timer fermato');
+}
+
+// Listen to timer changes
+onValue(ref(db, PATHS.timer), (snap) => {
+  const timer = snap.val();
+  const panel = document.getElementById('timer-panel');
+  const statusEl = document.getElementById('timer-status');
+  const timeEl = document.getElementById('timer-time');
+  
+  if (!timer || timer.status === 'stopped') {
+    panel.style.display = 'none';
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    return;
+  }
+  
+  panel.style.display = 'block';
+  panel.classList.remove('stopped');
+  
+  if (timerInterval) clearInterval(timerInterval);
+  
+  function updateTimer() {
+    const now = getSyncedTime();
+    
+    if (timer.status === 'countdown') {
+      const remaining = Math.max(0, Math.ceil((timer.startAt - now) / 1000));
+      statusEl.textContent = '⏳ Countdown - ' + timer.wodName;
+      
+      if (remaining > 0) {
+        timeEl.innerHTML = `<span class="countdown">${remaining}</span>`;
+      } else {
+        set(ref(db, PATHS.timer + '/status'), 'running');
+      }
+    } else if (timer.status === 'running') {
+      const elapsed = Math.floor((now - timer.startAt) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      statusEl.textContent = '🏃 ' + timer.wodName + ' - IN CORSO';
+      timeEl.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      
+      if (timer.cap && elapsed >= timer.cap * 60) {
+        timeEl.style.color = '#c0392b';
+        statusEl.textContent = '⏰ TIME CAP - ' + timer.wodName;
+      }
+    }
+  }
+  
+  updateTimer();
+  timerInterval = setInterval(updateTimer, 100);
+});
+
+// ========== AUTO ASSIGNMENT QUEUE ==========
+let teamQueue = [];
+let queueIndex = 0;
+
+function buildTeamQueue() {
+  const teams = Object.values(teamsCache);
+  // Order: Experience → Scaled → Open
+  const categoryOrder = { 'Experience': 1, 'Scaled': 2, 'Open': 3 };
+  
+  teamQueue = teams.sort((a, b) => {
+    // First by category
+    const catDiff = (categoryOrder[a.category] || 99) - (categoryOrder[b.category] || 99);
+    if (catDiff !== 0) return catDiff;
+    // Then by number within category
+    return (a.number || 999) - (b.number || 999);
+  });
+  
+  updateQueuePreview();
+}
+
+function updateQueuePreview() {
+  const preview = document.getElementById('queue-preview');
+  const status = document.getElementById('queue-status');
+  if (!preview) return;
+  
+  if (teamQueue.length === 0) {
+    preview.innerHTML = '<p style="color:#888">Nessun team caricato</p>';
+    status.textContent = '';
+    return;
+  }
+  
+  const remaining = teamQueue.length - queueIndex;
+  status.textContent = `📊 ${queueIndex}/${teamQueue.length} completati — ${remaining} rimanenti`;
+  
+  let html = '';
+  teamQueue.forEach((team, idx) => {
+    const isDone = idx < queueIndex;
+    const isNext = idx >= queueIndex && idx < queueIndex + 3;
+    const catEmoji = team.category === 'Experience' ? '🌱' : team.category === 'Scaled' ? '💪' : '🔥';
+    
+    html += `<div style="padding:6px 10px;margin:2px 0;border-radius:6px;font-size:13px;
+      background:${isNext ? '#FF6B3522' : isDone ? '#2ecc7122' : '#1a1a1a'};
+      color:${isDone ? '#2ecc71' : isNext ? '#FF6B35' : '#888'};
+      border-left:3px solid ${isNext ? '#FF6B35' : isDone ? '#2ecc71' : '#333'}">
+      ${isDone ? '✅' : isNext ? '➡️' : '⏳'} 
+      ${team.number ? '#' + team.number : ''} 
+      ${team.teamName || team.name} 
+      <span style="opacity:0.7">${catEmoji} ${team.category}</span>
+    </div>`;
+  });
+  
+  preview.innerHTML = html;
+}
+
+window.autoAssignNext = async function() {
+  // Get lanes with judges
+  const occupiedLanes = [];
+  for (let lane = 1; lane <= 3; lane++) {
+    const judge = Object.values(readyJudgesCache).find(j => j.lane === lane);
+    if (judge) occupiedLanes.push(lane);
+  }
+  
+  if (occupiedLanes.length === 0) {
+    toast('⚠️ Nessun giudice connesso alle lane!');
+    return;
+  }
+  
+  // Get next teams from queue
+  const teamsToAssign = teamQueue.slice(queueIndex, queueIndex + occupiedLanes.length);
+  
+  if (teamsToAssign.length === 0) {
+    toast('✅ Tutti i team hanno già gareggiato!');
+    return;
+  }
+  
+  // Get current workout (first one for now, or could be selected)
+  const wods = Object.values(workoutsCache).sort((a, b) => a.order - b.order);
+  const currentWodId = wods[0]?.id;
+  
+  // Assign teams to lanes
+  for (let i = 0; i < teamsToAssign.length && i < occupiedLanes.length; i++) {
+    const team = teamsToAssign[i];
+    const lane = occupiedLanes[i];
+    
+    await set(ref(db, PATHS.timer + '/laneAthletes/' + lane), {
+      athleteId: team.id,
+      athleteName: team.teamName || team.name,
+      teamName: team.teamName,
+      member1: team.member1,
+      member2: team.member2,
+      athleteNumber: team.number || null,
+      category: team.category,
+      wodId: currentWodId
+    });
+    
+    // Reset lane status to waiting
+    await update(ref(db, PATHS.timer + '/laneStatus/' + lane), {
+      status: 'waiting'
+    });
+  }
+  
+  queueIndex += teamsToAssign.length;
+  updateQueuePreview();
+  toast(`✅ Assegnati ${teamsToAssign.length} team!`);
+}
+
+window.resetQueue = function() {
+  if (!confirm('Reset la coda? Ripartirà dal primo team (Experience #1)')) return;
+  queueIndex = 0;
+  updateQueuePreview();
+  toast('🔄 Coda resettata');
+}
+
+// Rebuild queue when teams change
+onValue(ref(db, PATHS.athletes), (snap) => {
+  teamsCache = snap.val() || {};
+  buildTeamQueue();
+  renderWorkouts();
+  loadScoresTable(); // Refresh scores table when teams load
+});
+
+// ========== LANE RESET FUNCTIONS ==========
+window.resetLanes = async function() {
+  if (!confirm('⚠️ Reset tutte le lane?\n\nQuesto rimuoverà:\n- Giudici pronti\n- Team assegnati\n- Stato conferme')) return;
+  
+  await Promise.all([
+    set(ref(db, PATHS.timer + '/readyJudges'), null),
+    set(ref(db, PATHS.timer + '/laneStatus'), null),
+    set(ref(db, PATHS.timer + '/laneAthletes'), null)
+  ]);
+  toast('✅ Lane resettate!');
+}
+
+window.resetLiveScores = async function() {
+  if (!confirm('Reset live scores? (non tocca i punteggi salvati)')) return;
+  await set(ref(db, PATHS.timer + '/liveScores'), null);
+  toast('✅ Live scores resettati!');
+}
+
+// Clear a specific lane (remove judge)
+window.clearLane = async function(lane) {
+  const judge = Object.values(readyJudgesCache).find(j => j.lane === lane);
+  if (!judge) return;
+  
+  if (!confirm(`Rimuovere ${judge.name} dalla Lane ${lane}?`)) return;
+  
+  await set(ref(db, PATHS.timer + '/readyJudges/' + judge.judgeId), null);
+  await set(ref(db, PATHS.timer + '/laneStatus/' + lane), null);
+  await set(ref(db, PATHS.timer + '/laneAthletes/' + lane), null);
+  toast(`✅ Lane ${lane} liberata`);
+}
+
+// Update lane status panel in Judges tab
+function updateLaneStatusPanel() {
+  for (let lane = 1; lane <= 3; lane++) {
+    const el = document.getElementById('ls' + lane);
+    if (!el) continue;
+    
+    const judge = Object.values(readyJudgesCache).find(j => j.lane === lane);
+    const athlete = laneAthletesCache[lane];
+    const status = laneStatusCache[lane];
+    
+    let html = `<div class="lane-num">LANE ${lane}</div>`;
+    
+    if (judge) {
+      html += `<div class="lane-judge" style="color:#2ecc71">👤 ${judge.name}</div>`;
+      if (athlete) {
+        html += `<div style="font-size:12px;color:#FF6B35;margin-top:4px">${athlete.teamName || athlete.athleteName}</div>`;
+      }
+      if (status?.status === 'confirmed') {
+        html += `<div style="font-size:11px;color:#2ecc71;margin-top:2px">✅ Confermato</div>`;
+      } else if (status?.status === 'absent') {
+        html += `<div style="font-size:11px;color:#c0392b;margin-top:2px">❌ Assente</div>`;
+      } else {
+        html += `<div style="font-size:11px;color:#F7C948;margin-top:2px">⏳ In attesa</div>`;
+      }
+      // Bottone per liberare la lane
+      html += `<button onclick="clearLane(${lane})" style="margin-top:6px;padding:4px 8px;background:#c0392b;color:white;border:none;border-radius:4px;font-size:10px;cursor:pointer">🗑 Rimuovi</button>`;
+      el.className = 'lane-slot occupied';
+    } else {
+      html += `<div class="lane-judge" style="color:#555">Libera</div>`;
+      el.className = 'lane-slot';
+    }
+    
+    el.innerHTML = html;
+  }
+}
+
+// Listen for changes to update lane panel + AUTO MODE JUDGE CHECK
+onValue(ref(db, PATHS.timer + '/readyJudges'), (snap) => {
+  const prevCache = { ...readyJudgesCache };
+  readyJudgesCache = snap.val() || {};
+  renderWorkouts();
+  updateLaneStatusPanel();
+  
+  // AUTO MODE: Pause if a judge disconnects, resume when back
+  if (autoModeActive) {
+    const connectedLanes = Object.values(readyJudgesCache).filter(j => j.lane).length;
+    
+    if (connectedLanes < 3 && !autoModePaused) {
+      // PAUSE - don't stop completely
+      autoModePaused = true;
+      if (autoModeTimeout) clearTimeout(autoModeTimeout);
+      document.getElementById('auto-mode-label').textContent = 'PAUSA';
+      document.getElementById('auto-mode-label').style.color = '#F7C948';
+      document.getElementById('auto-current').textContent = '⏸️ In pausa - giudice mancante (' + connectedLanes + '/3)';
+      toast('⏸️ PAUSA - Giudice disconnesso! Riprende quando rientra.');
+    } else if (connectedLanes >= 3 && autoModePaused) {
+      // RESUME automatically
+      autoModePaused = false;
+      document.getElementById('auto-mode-label').textContent = 'ON';
+      document.getElementById('auto-mode-label').style.color = '#2ecc71';
+      toast('▶️ Giudici OK! Riprendo la timeline...');
+      runAutoMode();
+    }
+  }
+});
+
+onValue(ref(db, PATHS.timer + '/laneStatus'), (snap) => {
+  laneStatusCache = snap.val() || {};
+  renderWorkouts();
+  updateLaneStatusPanel();
+});
+
+onValue(ref(db, PATHS.timer + '/laneAthletes'), (snap) => {
+  laneAthletesCache = snap.val() || {};
+  renderWorkouts();
+  updateLaneStatusPanel();
+});
+
+// ========== PLANNER / TIMELINE ==========
+let timeline = [];
+let currentHeatIndex = 0;
+let autoModeActive = false;
+let autoModePaused = false;
+let autoModeTimeout = null;
+
+// Jump to specific heat in timeline
+window.jumpToHeat = async function(idx) {
+  if (idx < 0 || idx >= timeline.length) return;
+  
+  const event = timeline[idx];
+  if (event.type !== 'heat') {
+    toast('⚠️ Seleziona una heat, non una pausa');
+    return;
+  }
+  
+  if (!confirm(`Saltare a: ${event.wodName} - Heat ${event.heatNum}?`)) return;
+  
+  currentHeatIndex = idx;
+  renderTimeline();
+  
+  // Load this heat into lanes
+  const wodId = event.wodId;
+  const teams = event.teams || [];
+  
+  // Clear and set lanes
+  await set(ref(db, PATHS.timer + '/laneAthletes'), [null, ...teams.slice(0, 3).map((t, i) => ({
+    athleteId: t.id,
+    athleteName: t.teamName || t.name,
+    athleteNumber: t.number || i + 1,
+    teamName: t.teamName || t.name,
+    member1: t.member1 || '',
+    member2: t.member2 || '',
+    category: t.category || event.category,
+    wodId: wodId
+  }))]);
+  
+  // Update timer with workout info
+  const wodSnap = await get(ref(db, PATHS.workouts + '/' + wodId));
+  const wod = wodSnap.val();
+  if (wod) {
+    await update(ref(db, PATHS.timer), {
+      activeWorkout: wodId,
+      wodName: wod.name,
+      duration: wod.duration || wod.cap || 10,
+      cap: wod.cap || wod.duration || 10,
+      currentHeat: {
+        wodId, wodName: wod.name, category: event.category,
+        heatNum: event.heatNum, teams
+      }
+    });
+  }
+  
+  // Clear ready judges
+  await remove(ref(db, PATHS.timer + '/readyJudges'));
+  
+  toast(`✅ Saltato a Heat ${event.heatNum} - ${event.wodName}`);
+}
+
+// Load official pre-set timeline from Firebase
+window.loadOfficialTimeline = async function() {
+  try {
+    const snap = await get(ref(db, 'ark_timeline'));
+    const data = snap.val();
+    
+    if (!data) {
+      toast('⚠️ Nessuna timeline ufficiale trovata');
+      return;
+    }
+    
+    // Handle both array and object format
+    if (Array.isArray(data)) {
+      timeline = data.sort((a, b) => (a.order || 0) - (b.order || 0));
+    } else {
+      timeline = Object.values(data).sort((a, b) => (a.order || 0) - (b.order || 0));
+    }
+    
+    // Ensure teams array exists for all heats
+    timeline = timeline.map(event => {
+      if (event.type === 'heat' && !event.teams) {
+        event.teams = [];
+      }
+      return event;
+    });
+    
+    // Reset position
+    currentHeatIndex = 0;
+    
+    renderTimeline();
+    
+    const heats = timeline.filter(e => e.type === 'heat').length;
+    toast(`✅ Timeline caricata! ${heats} heat`);
+    
+  } catch (error) {
+    console.error('Error loading timeline:', error);
+    toast('❌ Errore: ' + error.message);
+  }
+}
+
+// Auto-load timeline on page load
+setTimeout(() => {
+  loadOfficialTimeline();
+}, 1500);
+
+window.generateTimeline = function() {
+  const pauseHeats = parseInt(document.getElementById('pause-between-heats').value) || 3;
+  const pauseWods = parseInt(document.getElementById('pause-between-wods').value) || 5;
+  const startTime = document.getElementById('start-time').value || '09:00';
+  const lunchDuration = parseInt(document.getElementById('lunch-duration').value) || 0;
+  const lunchAfterWod = parseInt(document.getElementById('lunch-after-wod').value) || 2;
+  const bufferTime = parseInt(document.getElementById('buffer-time').value) || 0;
+  
+  // Get teams ordered: Experience → Scaled → Open
+  const categoryOrder = ['Experience', 'Scaled', 'Open'];
+  const allTeams = Object.values(teamsCache);
+  
+  // Get workouts per category
+  const wodsByCategory = {};
+  categoryOrder.forEach(cat => {
+    wodsByCategory[cat] = Object.values(workoutsCache)
+      .filter(w => w.categories && w.categories.includes(cat))
+      .sort((a, b) => a.order - b.order);
+  });
+  
+  timeline = [];
+  let currentTime = parseTimeHM(startTime);
+  
+  // For each workout number (WOD 1, WOD 2, WOD 3)
+  const maxWods = Math.max(...categoryOrder.map(c => wodsByCategory[c].length));
+  
+  for (let wodIndex = 0; wodIndex < maxWods; wodIndex++) {
+    // For each category in order
+    categoryOrder.forEach(cat => {
+      const wod = wodsByCategory[cat][wodIndex];
+      if (!wod) return;
+      
+      const catTeams = allTeams
+        .filter(t => t.category === cat)
+        .sort((a, b) => (a.number || 999) - (b.number || 999));
+      
+      // Create heats (3 teams per heat)
+      for (let i = 0; i < catTeams.length; i += 3) {
+        const heatTeams = catTeams.slice(i, i + 3);
+        const heatNum = Math.floor(i / 3) + 1;
+        const isLastHeatOfWod = (i + 3 >= catTeams.length);
+        const isLastHeatOfCategory = isLastHeatOfWod;
+        
+        timeline.push({
+          type: 'heat',
+          wodId: wod.id,
+          wodName: wod.name,
+          wodDuration: wod.duration || wod.cap || 12,
+          category: cat,
+          heatNum,
+          teams: heatTeams,
+          startTime: currentTime,
+          duration: wod.duration || wod.cap || 12
+        });
+        
+        currentTime += (wod.duration || wod.cap || 12);
+        
+        // Add pause after heat
+        if (!isLastHeatOfWod) {
+          timeline.push({
+            type: 'pause',
+            duration: pauseHeats,
+            startTime: currentTime,
+            label: 'Pausa tra Heat'
+          });
+          currentTime += pauseHeats;
+        }
+      }
+      
+      // Add longer pause between categories/wods
+      if (cat !== 'Open' || wodIndex < maxWods - 1) {
+        timeline.push({
+          type: 'pause',
+          duration: pauseWods,
+          startTime: currentTime,
+          label: 'Pausa tra WOD/Categoria'
+        });
+        currentTime += pauseWods;
+      }
+    });
+    
+    // Add LUNCH BREAK after specified WOD
+    if (lunchDuration > 0 && (wodIndex + 1) === lunchAfterWod) {
+      timeline.push({
+        type: 'lunch',
+        duration: lunchDuration,
+        startTime: currentTime,
+        label: '🍽️ PAUSA PRANZO'
+      });
+      currentTime += lunchDuration;
+    }
+    
+    // Add BUFFER for unexpected delays after each WOD round
+    if (bufferTime > 0 && wodIndex < maxWods - 1) {
+      timeline.push({
+        type: 'buffer',
+        duration: bufferTime,
+        startTime: currentTime,
+        label: '⚠️ Buffer Imprevisti'
+      });
+      currentTime += bufferTime;
+    }
+  }
+  
+  renderTimeline();
+  toast('📅 Timeline generata!');
+}
+
+// Add imprevisto pause during competition
+window.addImprevisto = function(minutes) {
+  if (minutes === 0) {
+    minutes = parseInt(prompt('Minuti di pausa imprevisto:'));
+    if (!minutes || minutes < 1) return;
+  }
+  
+  // Insert imprevisto pause at current position
+  const imprevisto = {
+    type: 'imprevisto',
+    duration: minutes,
+    startTime: 0, // Will be recalculated
+    label: '🚨 IMPREVISTO (+' + minutes + ' min)'
+  };
+  
+  timeline.splice(currentHeatIndex, 0, imprevisto);
+  
+  // Recalculate all times from current position
+  let time = currentHeatIndex > 0 ? timeline[currentHeatIndex - 1].startTime + timeline[currentHeatIndex - 1].duration : parseTimeHM(document.getElementById('start-time').value);
+  for (let i = currentHeatIndex; i < timeline.length; i++) {
+    timeline[i].startTime = time;
+    time += timeline[i].duration;
+  }
+  
+  renderTimeline();
+  toast(`🚨 Imprevisto di ${minutes} min aggiunto!`);
+}
+
+function parseTimeHM(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function formatTimeMin(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+}
+
+function renderTimeline() {
+  const list = document.getElementById('timeline-list');
+  const summary = document.getElementById('timeline-summary');
+  
+  if (timeline.length === 0) {
+    list.innerHTML = '<p style="color:#888">Nessun evento</p>';
+    summary.innerHTML = '<span style="color:#888">Genera la timeline</span>';
+    return;
+  }
+  
+  const heats = timeline.filter(e => e.type === 'heat');
+  const totalDuration = timeline.reduce((sum, e) => sum + e.duration, 0);
+  const endTime = timeline[0].startTime + totalDuration;
+  
+  summary.innerHTML = `
+    <div style="display:flex;justify-content:space-around;text-align:center">
+      <div><div style="font-size:24px;color:#FF6B35">${heats.length}</div><div style="color:#888;font-size:12px">Heat Totali</div></div>
+      <div><div style="font-size:24px;color:#2ecc71">${formatTimeMin(timeline[0].startTime)}</div><div style="color:#888;font-size:12px">Inizio</div></div>
+      <div><div style="font-size:24px;color:#c0392b">${formatTimeMin(endTime)}</div><div style="color:#888;font-size:12px">Fine Stimata</div></div>
+      <div><div style="font-size:24px;color:#fff">${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m</div><div style="color:#888;font-size:12px">Durata</div></div>
+    </div>
+  `;
+  
+  let html = '';
+  timeline.forEach((event, idx) => {
+    const isCurrent = idx === currentHeatIndex;
+    const isDone = idx < currentHeatIndex;
+    const catEmoji = event.category === 'Experience' ? '🌱' : event.category === 'Scaled' ? '💪' : '🔥';
+    
+    if (event.type === 'heat') {
+      html += `<div style="padding:12px;margin:4px 0;border-radius:8px;
+        background:${isCurrent ? '#FF6B3533' : isDone ? '#2ecc7122' : '#1a1a1a'};
+        border-left:4px solid ${isCurrent ? '#FF6B35' : isDone ? '#2ecc71' : '#333'};
+        cursor:pointer;transition:all 0.2s" 
+        onclick="jumpToHeat(${idx})" 
+        onmouseover="this.style.transform='translateX(4px)'" 
+        onmouseout="this.style.transform='none'">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <span style="color:#888;font-size:12px">${formatTimeMin(event.startTime)}</span>
+            <span style="font-weight:600;margin-left:8px">${catEmoji} ${event.wodName} — Heat ${event.heatNum}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="color:#888">${event.duration} min</span>
+            ${!isCurrent ? `<button onclick="event.stopPropagation();jumpToHeat(${idx})" 
+              style="background:#FF6B35;border:none;color:#fff;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer">
+              ▶️ VAI</button>` : ''}
+          </div>
+        </div>
+        <div style="margin-top:6px;font-size:13px;color:#888">
+          ${event.teams.map(t => t.teamName || t.name).join(' • ')}
+        </div>
+        ${isCurrent ? '<div style="color:#FF6B35;font-size:12px;margin-top:4px">▶️ PROSSIMA</div>' : ''}
+        ${isDone ? '<div style="color:#2ecc71;font-size:12px;margin-top:4px">✅ Completata</div>' : ''}
+      </div>`;
+    } else {
+      // Different styles for different pause types
+      let bgColor = '#111';
+      let borderColor = isDone ? '#2ecc71' : '#555';
+      let icon = '⏸️';
+      
+      if (event.type === 'lunch') {
+        bgColor = '#F7C94822';
+        borderColor = isDone ? '#2ecc71' : '#F7C948';
+        icon = '🍽️';
+      } else if (event.type === 'buffer') {
+        bgColor = '#3498db22';
+        borderColor = isDone ? '#2ecc71' : '#3498db';
+        icon = '⚠️';
+      } else if (event.type === 'imprevisto') {
+        bgColor = '#c0392b22';
+        borderColor = isDone ? '#2ecc71' : '#c0392b';
+        icon = '🚨';
+      }
+      
+      html += `<div style="padding:8px 12px;margin:4px 0;border-radius:8px;background:${bgColor};
+        border-left:4px solid ${borderColor};color:#888;font-size:13px">
+        ${icon} ${event.label} — ${event.duration} min
+        <span style="float:right;color:#666">${formatTimeMin(event.startTime)}</span>
+      </div>`;
+    }
+  });
+  
+  list.innerHTML = html;
+}
+
+// Wait for all judges to confirm their assigned teams
+function waitForJudgeConfirmations(lanes, statusEl, event) {
+  return new Promise((resolve) => {
+    let confirmedCount = 0;
+    const totalNeeded = lanes.length;
+    
+    const unsubscribe = onValue(ref(db, PATHS.timer + '/laneStatus'), (snap) => {
+      if (!autoModeActive) {
+        unsubscribe();
+        resolve();
+        return;
+      }
+      
+      const statuses = snap.val() || {};
+      confirmedCount = 0;
+      
+      for (const lane of lanes) {
+        const s = statuses[lane];
+        if (s && (s.status === 'confirmed' || s.status === 'absent')) {
+          confirmedCount++;
+        }
+      }
+      
+      statusEl.innerHTML = `👥 <b>${event.wodName}</b> — Heat ${event.heatNum}<br><span style="color:#FF6B35">Attendo conferma giudici... (${confirmedCount}/${totalNeeded})</span>`;
+      
+      if (confirmedCount >= totalNeeded) {
+        unsubscribe();
+        resolve();
+      }
+    });
+  });
+}
+
+window.toggleAutoMode = function() {
+  const checkbox = document.getElementById('auto-mode');
+  const label = document.getElementById('auto-mode-label');
+  const status = document.getElementById('auto-status');
+  
+  // CHECK JUDGES before enabling auto mode
+  if (checkbox.checked) {
+    const connectedJudges = Object.values(readyJudgesCache).filter(j => j.lane);
+    if (connectedJudges.length < 3) {
+      checkbox.checked = false;
+      toast(`⚠️ Servono 3 giudici connessi! (${connectedJudges.length}/3 presenti)`);
+      return;
+    }
+  }
+  
+  autoModeActive = checkbox.checked;
+  label.textContent = autoModeActive ? 'ON' : 'OFF';
+  label.style.color = autoModeActive ? '#2ecc71' : '#888';
+  status.style.display = autoModeActive ? 'block' : 'none';
+  
+  // Broadcast auto mode status to judges
+  set(ref(db, PATHS.timer + '/autoModeActive'), autoModeActive);
+  
+  if (autoModeActive) {
+    lastJudgeCount = Object.keys(readyJudgesCache).length;
+    // Show which heat we're starting from
+    const currentEvent = timeline[currentHeatIndex];
+    if (currentEvent && currentEvent.type === 'heat') {
+      toast(`▶️ Auto mode partirà da: ${currentEvent.wodName} - Heat ${currentEvent.heatNum}`);
+    }
+    runAutoMode();
+  } else {
+    stopAutoMode();
+  }
+}
+
+// Track judge count for disconnect detection
+let lastJudgeCount = 0;
+
+window.stopAutoMode = async function() {
+  autoModeActive = false;
+  autoModePaused = false;
+  document.getElementById('auto-mode').checked = false;
+  document.getElementById('auto-mode-label').textContent = 'OFF';
+  document.getElementById('auto-mode-label').style.color = '#888';
+  document.getElementById('auto-status').style.display = 'none';
+  if (autoModeTimeout) clearTimeout(autoModeTimeout);
+  // Clear next heat countdown and auto mode status for judges
+  await set(ref(db, PATHS.timer + '/nextHeatAt'), null);
+  await set(ref(db, PATHS.timer + '/autoModeActive'), false);
+  toast('⏹ Modalità automatica fermata');
+}
+
+async function runAutoMode() {
+  if (!autoModeActive || currentHeatIndex >= timeline.length) {
+    stopAutoMode();
+    return;
+  }
+  
+  // Don't run if paused
+  if (autoModePaused) {
+    return;
+  }
+  
+  const event = timeline[currentHeatIndex];
+  const statusEl = document.getElementById('auto-current');
+  const progressEl = document.getElementById('auto-progress');
+  
+  if (event.type === 'heat') {
+    // CHECK JUDGES before each heat
+    const connectedLanes = Object.values(readyJudgesCache).filter(j => j.lane).length;
+    if (connectedLanes < 3) {
+      stopAutoMode();
+      toast('🚨 Non ci sono abbastanza giudici! (necessari 3, presenti ' + connectedLanes + ')');
+      return;
+    }
+    
+    // Get occupied lanes
+    const occupiedLanes = [1, 2, 3].filter(lane => 
+      Object.values(readyJudgesCache).find(j => j.lane === lane)
+    );
+    
+    statusEl.innerHTML = `⏳ <b>${event.wodName}</b> — Heat ${event.heatNum} (${event.category})<br><span style="color:#FF6B35">Assegnazione team ai giudici...</span>`;
+    progressEl.style.width = '0%';
+    progressEl.style.transition = 'none';
+    
+    // Set current heat info for leaderboard sync
+    await set(ref(db, PATHS.timer + '/currentHeat'), {
+      wodId: event.wodId,
+      wodName: event.wodName,
+      category: event.category,
+      heatNum: event.heatNum,
+      teams: event.teams.map(t => ({
+        id: t.id,
+        teamName: t.teamName || t.name || 'Team',
+        member1: t.member1 || '',
+        member2: t.member2 || '',
+        number: t.number || 0,
+        category: t.category || ''
+      }))
+    });
+    
+    // Clear previous lane status, athletes AND live scores
+    await set(ref(db, PATHS.timer + '/laneStatus'), null);
+    await set(ref(db, PATHS.timer + '/laneAthletes'), null);
+    await set(ref(db, PATHS.timer + '/liveScores'), null);
+    
+    // Small delay to let judges reset
+    await new Promise(r => setTimeout(r, 500));
+    
+    // Assign teams to lanes
+    for (let i = 0; i < event.teams.length && i < occupiedLanes.length; i++) {
+      const team = event.teams[i];
+      const lane = occupiedLanes[i];
+      
+      await set(ref(db, PATHS.timer + '/laneAthletes/' + lane), {
+        athleteId: team.id,
+        athleteName: team.teamName || team.name,
+        teamName: team.teamName,
+        member1: team.member1,
+        member2: team.member2,
+        athleteNumber: team.number,
+        category: team.category,
+        wodId: event.wodId
+      });
+    }
+    
+    const teamsInHeat = Math.min(event.teams.length, occupiedLanes.length);
+    statusEl.innerHTML = `👥 <b>${event.wodName}</b> — Heat ${event.heatNum}<br><span style="color:#FF6B35">Attendo conferma giudici... (0/${teamsInHeat})</span>`;
+    
+    // Wait for ALL judges to confirm their teams
+    await waitForJudgeConfirmations(occupiedLanes.slice(0, teamsInHeat), statusEl, event);
+    
+    if (!autoModeActive) return; // Stopped during wait
+    
+    // ALL CONFIRMED! Start timer
+    const wod = workoutsCache[event.wodId];
+    const startAt = getSyncedTime() + 10000; // 10s countdown
+    await update(ref(db, PATHS.timer), {
+      activeWorkout: event.wodId,
+      wodName: event.wodName,
+      status: 'countdown',
+      startAt: startAt,
+      duration: wod?.duration || event.duration,
+      cap: wod?.cap || event.duration
+    });
+    
+    toast('✅ Tutti i giudici pronti! Countdown avviato!');
+    
+    // Wait for FULL workout duration
+    const countdownTime = 10;
+    const workoutTime = event.duration * 60;
+    const bufferTime = 5;
+    const totalWaitSeconds = countdownTime + workoutTime + bufferTime;
+    const waitTime = totalWaitSeconds * 1000;
+    
+    statusEl.innerHTML = `🏃 <b>${event.wodName}</b> — Heat ${event.heatNum} (${event.category})<br><span style="color:#2ecc71">In corso — ${event.duration} min</span>`;
+    
+    progressEl.style.transition = `width ${totalWaitSeconds}s linear`;
+    setTimeout(() => progressEl.style.width = '100%', 100);
+    
+    // Set nextHeatAt for judges to see countdown between heats
+    const nextHeatAt = getSyncedTime() + waitTime;
+    await set(ref(db, PATHS.timer + '/nextHeatAt'), nextHeatAt);
+    
+    autoModeTimeout = setTimeout(async () => {
+      // Clear nextHeatAt when starting next heat
+      await set(ref(db, PATHS.timer + '/nextHeatAt'), null);
+      currentHeatIndex++;
+      renderTimeline();
+      runAutoMode();
+    }, waitTime);
+    
+  } else if (event.type === 'pause') {
+    statusEl.innerHTML = `⏸️ <b>${event.label}</b> — ${event.duration} min`;
+    progressEl.style.width = '0%';
+    progressEl.style.transition = `width ${event.duration * 60}s linear`;
+    setTimeout(() => progressEl.style.width = '100%', 100);
+    
+    // Set nextHeatAt for judges to see pause countdown
+    const pauseMs = event.duration * 60 * 1000;
+    const nextHeatAt = getSyncedTime() + pauseMs;
+    await set(ref(db, PATHS.timer + '/nextHeatAt'), nextHeatAt);
+    
+    autoModeTimeout = setTimeout(async () => {
+      await set(ref(db, PATHS.timer + '/nextHeatAt'), null);
+      currentHeatIndex++;
+      renderTimeline();
+      runAutoMode();
+    }, pauseMs);
+  }
+}
+
+window.runNextHeat = async function() {
+  if (currentHeatIndex >= timeline.length) {
+    toast('✅ Gara completata!');
+    return;
+  }
+  
+  const event = timeline[currentHeatIndex];
+  
+  if (event.type === 'pause') {
+    toast(`⏸️ Pausa di ${event.duration} minuti`);
+    currentHeatIndex++;
+    renderTimeline();
+    return;
+  }
+  
+  // Set current heat teams - judges will choose from these
+  await set(ref(db, PATHS.timer + '/currentHeat'), {
+    wodId: event.wodId,
+    wodName: event.wodName,
+    category: event.category,
+    heatNum: event.heatNum,
+    teams: event.teams.map(t => ({
+      id: t.id,
+      teamName: t.teamName || t.name || 'Team',
+      name: t.teamName || t.name || 'Team',
+      member1: t.member1 || '',
+      member2: t.member2 || '',
+      number: t.number || 0,
+      category: t.category || ''
+    }))
+  });
+  
+  // Clear previous lane assignments
+  await set(ref(db, PATHS.timer + '/laneAthletes'), null);
+  
+  // Start timer
+  const wod = workoutsCache[event.wodId];
+  const startAt = getSyncedTime() + 10000;
+  await update(ref(db, PATHS.timer), {
+    activeWorkout: event.wodId,
+    wodName: event.wodName,
+    status: 'countdown',
+    startAt: startAt,
+    duration: wod?.duration || event.duration,
+    cap: wod?.cap || event.duration
+  });
+  
+  currentHeatIndex++;
+  renderTimeline();
+  toast(`▶️ Heat avviata: ${event.wodName}`);
+}
+
+window.skipToWod = function() {
+  const wodName = prompt('Inserisci nome WOD (es: WOD 2 - Experience):');
+  if (!wodName) return;
+  
+  const idx = timeline.findIndex(e => e.type === 'heat' && e.wodName.toLowerCase().includes(wodName.toLowerCase()));
+  if (idx >= 0) {
+    currentHeatIndex = idx;
+    renderTimeline();
+    toast(`⏭️ Saltato a ${timeline[idx].wodName}`);
+  } else {
+    toast('❌ WOD non trovato');
+  }
+}
+
+</script>
+</body>
+</html>

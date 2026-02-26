@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>👥 ARK Games - Team</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh;padding:16px}
+h1{font-size:24px;margin-bottom:20px}
+.back{color:#888;text-decoration:none;font-size:14px;display:inline-block;margin-bottom:16px}
+input{width:100%;padding:14px;background:#111;border:1px solid #333;border-radius:10px;color:#fff;font-size:16px;margin-bottom:12px}
+input:focus{outline:none;border-color:#FF6B35}
+.team-card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin-bottom:12px;cursor:pointer}
+.team-card:active{border-color:#FF6B35}
+.team-card .team-name{font-size:22px;font-weight:700}
+.team-card .members{font-size:14px;color:#888;margin-top:4px}
+.team-card .cat{font-size:14px;color:#888;margin-top:4px}
+.score-card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:16px;margin-bottom:8px}
+.score-card .wod{color:#FF6B35;font-weight:600}
+.score-card .result{font-size:24px;font-weight:800;margin:8px 0}
+.score-card .meta{color:#888;font-size:13px}
+.profile{text-align:center;padding:20px 0;margin-bottom:20px;border-bottom:1px solid #2a2a2a}
+.profile .num{font-size:48px;font-weight:800;color:#FF6B35}
+.profile .team-name{font-size:28px;font-weight:700;margin-top:8px}
+.profile .members{font-size:16px;color:#888;margin-top:4px}
+.tag{display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;margin-top:8px}
+.tag-scaled{background:#3498db22;color:#3498db}
+.tag-experience{background:#2ecc7122;color:#2ecc71}
+.no-scores{text-align:center;padding:40px;color:#888}
+</style>
+</head>
+<body>
+<a href="/" style="display:inline-block;margin-bottom:12px;padding:8px 16px;background:#FF6B35;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">🏠 Home</a>
+<h1>👥 Cerca il tuo Team</h1>
+
+<div id="searchView">
+  <input id="search" placeholder="🔍 Cerca per nome team o nome membro..." oninput="searchTeam()">
+  <div id="searchResults"></div>
+</div>
+
+<div id="profileView" style="display:none">
+  <div class="profile">
+    <div class="num" id="profNum">-</div>
+    <div class="team-name" id="profTeamName">-</div>
+    <div class="members" id="profMembers">-</div>
+    <div id="profCat"></div>
+  </div>
+  <h3 style="margin-bottom:12px">📊 I vostri score</h3>
+  <div id="profScores"></div>
+  <p style="margin-top:16px;text-align:center"><a href="#" style="color:#888" onclick="backToSearch()">← Cerca altro team</a></p>
+</div>
+
+<script type="module">
+import { db, ref, get, onValue, PATHS } from './firebase-config.js';
+
+let allTeams = [];
+
+onValue(ref(db, PATHS.athletes), (snap) => {
+  allTeams = snap.val() ? Object.values(snap.val()) : [];
+});
+
+window.searchTeam = function() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const results = document.getElementById('searchResults');
+  
+  if (q.length < 2) { results.innerHTML = ''; return; }
+  
+  const matches = allTeams.filter(t => {
+    const teamName = (t.teamName || t.name || '').toLowerCase();
+    const member1 = (t.member1 || '').toLowerCase();
+    const member2 = (t.member2 || '').toLowerCase();
+    const number = String(t.number || '');
+    
+    return teamName.includes(q) || member1.includes(q) || member2.includes(q) || number.includes(q);
+  });
+  
+  results.innerHTML = matches.map(t => `
+    <div class="team-card" onclick='showProfile("${t.id}")'>
+      <div class="team-name">${t.number ? '#' + t.number + ' ' : ''}${t.teamName || t.name}</div>
+      <div class="members">${t.member1 || ''} & ${t.member2 || ''}</div>
+      <div class="cat"><span class="tag tag-${t.category.toLowerCase()}">${t.category}</span></div>
+    </div>
+  `).join('') || '<p style="color:#888;padding:12px">Nessun risultato</p>';
+}
+
+window.showProfile = async function(id) {
+  const team = allTeams.find(t => t.id === id);
+  if (!team) return;
+  
+  document.getElementById('searchView').style.display = 'none';
+  document.getElementById('profileView').style.display = 'block';
+  document.getElementById('profNum').textContent = team.number ? '#' + team.number : '🐾';
+  document.getElementById('profTeamName').textContent = team.teamName || team.name;
+  document.getElementById('profMembers').textContent = (team.member1 || '') + ' & ' + (team.member2 || '');
+  document.getElementById('profCat').innerHTML = `<span class="tag tag-${team.category.toLowerCase()}">${team.category}</span>`;
+  
+  // Load scores
+  const [scoresSnap, wodsSnap] = await Promise.all([
+    get(ref(db, PATHS.scores + '/' + id)),
+    get(ref(db, PATHS.workouts))
+  ]);
+  
+  const scores = scoresSnap.val() || {};
+  const wods = wodsSnap.val() ? Object.values(wodsSnap.val()).sort((a, b) => a.order - b.order) : [];
+  
+  const scoresEl = document.getElementById('profScores');
+  
+  if (Object.keys(scores).length === 0) {
+    scoresEl.innerHTML = '<div class="no-scores">Nessun punteggio ancora registrato</div>';
+    return;
+  }
+  
+  scoresEl.innerHTML = wods.map(wod => {
+    const score = scores[wod.id];
+    if (!score) return `
+      <div class="score-card">
+        <div class="wod">${wod.name}</div>
+        <div class="result" style="color:#555">—</div>
+        <div class="meta">Non ancora completato</div>
+      </div>`;
+    
+    const display = wod.type === 'For Time'
+      ? `${Math.floor(score.time/60)}:${String(score.time%60).padStart(2,'0')}`
+      : `${score.reps} REPS`;
+    
+    return `
+      <div class="score-card">
+        <div class="wod">${wod.name} — ${wod.type}</div>
+        <div class="result">${display}</div>
+        <div class="meta">No-rep: ${score.noReps || 0} | Giudice: ${score.judgeName || '-'}</div>
+      </div>`;
+  }).join('');
+}
+
+window.backToSearch = function() {
+  document.getElementById('profileView').style.display = 'none';
+  document.getElementById('searchView').style.display = 'block';
+}
+</script>
+</body>
+</html>
