@@ -1502,7 +1502,7 @@ window.jumpToHeat = async function(idx) {
     return;
   }
   
-  if (!confirm(`Saltare a: ${event.wodName} - Heat ${event.heatNum}?`)) return;
+  if (!confirm(`Saltare a: ${event.wodName} - Heat ${event.heatNum}?\n\nDopo la conferma dei giudici partirà il countdown.`)) return;
   
   currentHeatIndex = idx;
   renderTimeline();
@@ -1510,6 +1510,7 @@ window.jumpToHeat = async function(idx) {
   // Load this heat into lanes
   const wodId = event.wodId;
   const teams = event.teams || [];
+  const occupiedLanes = [1, 2, 3].slice(0, teams.length);
   
   // Clear and set lanes
   await set(ref(db, PATHS.timer + '/laneAthletes'), [null, ...teams.slice(0, 3).map((t, i) => ({
@@ -1523,6 +1524,13 @@ window.jumpToHeat = async function(idx) {
     wodId: wodId
   }))]);
   
+  // Reset lane statuses to waiting
+  await set(ref(db, PATHS.timer + '/laneStatus'), [null,
+    { status: 'waiting' },
+    { status: 'waiting' },
+    { status: 'waiting' }
+  ]);
+  
   // Update timer with workout info
   const wodSnap = await get(ref(db, PATHS.workouts + '/' + wodId));
   const wod = wodSnap.val();
@@ -1530,8 +1538,9 @@ window.jumpToHeat = async function(idx) {
     await update(ref(db, PATHS.timer), {
       activeWorkout: wodId,
       wodName: wod.name,
-      duration: wod.duration || wod.cap || 10,
+      duration: (wod.duration || wod.cap || 10) * 60,
       cap: wod.cap || wod.duration || 10,
+      status: 'ready',
       currentHeat: {
         wodId, wodName: wod.name, category: event.category,
         heatNum: event.heatNum, teams
@@ -1542,7 +1551,64 @@ window.jumpToHeat = async function(idx) {
   // Clear ready judges
   await remove(ref(db, PATHS.timer + '/readyJudges'));
   
-  toast(`✅ Saltato a Heat ${event.heatNum} - ${event.wodName}`);
+  toast(`✅ Heat ${event.heatNum} caricata — attendo conferma giudici...`);
+  
+  // Wait for judge confirmations then auto-start
+  const statusEl = document.getElementById('auto-status');
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = `👥 <b>${event.wodName}</b> — Heat ${event.heatNum}<br><span style="color:#FF6B35">Attendo conferma giudici... (0/${teams.length})</span>`;
+  
+  await waitForJudgeConfirmationsManual(occupiedLanes, statusEl, event);
+  
+  // All confirmed - start countdown!
+  statusEl.innerHTML = `🚀 <b>Tutti pronti!</b> Avvio countdown...`;
+  await new Promise(r => setTimeout(r, 1000));
+  
+  // Start 10 second countdown
+  const countdownStart = getSyncedTime();
+  await update(ref(db, PATHS.timer), {
+    status: 'countdown',
+    countdownStart: countdownStart
+  });
+  
+  // Wait for countdown
+  await new Promise(r => setTimeout(r, 10000));
+  
+  // GO!
+  const startAt = getSyncedTime();
+  await update(ref(db, PATHS.timer), {
+    status: 'running',
+    startAt: startAt
+  });
+  
+  statusEl.innerHTML = `▶️ <b>${event.wodName}</b> — Heat ${event.heatNum} IN CORSO`;
+}
+
+// Manual mode wait for judges (can be cancelled)
+function waitForJudgeConfirmationsManual(lanes, statusEl, event) {
+  return new Promise((resolve) => {
+    let confirmedCount = 0;
+    const totalNeeded = lanes.length;
+    
+    const unsubscribe = onValue(ref(db, PATHS.timer + '/laneStatus'), (snap) => {
+      const statuses = snap.val() || {};
+      confirmedCount = 0;
+      
+      for (const lane of lanes) {
+        const s = statuses[lane];
+        if (s && (s.status === 'confirmed' || s.status === 'absent')) {
+          confirmedCount++;
+        }
+      }
+      
+      statusEl.innerHTML = `👥 <b>${event.wodName}</b> — Heat ${event.heatNum}<br><span style="color:#FF6B35">Attendo conferma giudici... (${confirmedCount}/${totalNeeded})</span>`;
+      
+      if (confirmedCount >= totalNeeded) {
+        unsubscribe();
+        resolve();
+      }
+    });
+  });
 }
 
 // Load official pre-set timeline from Firebase
