@@ -183,6 +183,7 @@ textarea{min-height:80px;resize:vertical}
     <div class="row" style="margin-top:12px">
       <button class="btn btn-primary" onclick="loadOfficialTimeline()" style="background:#2ecc71">📥 Carica Timeline Ufficiale</button>
       <button class="btn btn-secondary" onclick="generateTimeline()">🔄 Genera Nuova</button>
+      <button class="btn btn-primary" onclick="generateFinale()" style="background:#F7C948;color:#000">🏆 GENERA FINALE</button>
     </div>
   </div>
   
@@ -1654,6 +1655,135 @@ window.loadOfficialTimeline = async function() {
 setTimeout(() => {
   loadOfficialTimeline();
 }, 1500);
+
+// ========== GENERA FINALE (Top 3 per categoria) ==========
+window.generateFinale = async function() {
+  if (!confirm('🏆 GENERA FINALE\n\nQuesto calcolerà la classifica dopo WOD A, B, C e aggiornerà la finale con i Top 3 di ogni categoria.\n\nContinuare?')) return;
+  
+  try {
+    // Carica teams e scores
+    const [teamsSnap, scoresSnap] = await Promise.all([
+      get(ref(db, PATHS.athletes)),
+      get(ref(db, PATHS.scores))
+    ]);
+    
+    const teams = teamsSnap.val() || {};
+    const scores = scoresSnap.val() || {};
+    
+    // WOD da considerare per la classifica (A, B, C - escluso D finale)
+    const qualifyingWods = ['wod-a-marlin', 'wod-b-open', 'wod-b-scaled', 'wod-b-experience', 'wod-c-open', 'wod-c-scaled-exp'];
+    
+    // Calcola punti per ogni categoria
+    const categories = ['Experience', 'Scaled', 'Open'];
+    const results = {};
+    
+    categories.forEach(cat => {
+      // Filtra team per categoria (considera anche Rinoceronti che è Experience ma gareggia con Scaled)
+      const catTeams = Object.values(teams).filter(t => {
+        if (cat === 'Experience') {
+          // Experience include i team exp-1 a exp-5 + exp-8 (escluso exp-9 che va con Scaled)
+          return t.category === 'Experience' && t.id !== 'exp-9';
+        } else if (cat === 'Scaled') {
+          // Scaled include i team scaled + exp-9 (Rinoceronti)
+          return t.category === 'Scaled' || t.id === 'exp-9';
+        }
+        return t.category === cat;
+      });
+      
+      // Calcola punti per ogni team
+      const rankings = catTeams.map(team => {
+        const teamScores = scores[team.id] || {};
+        let totalPoints = 0;
+        let wodsCompleted = 0;
+        
+        // Trova i WOD applicabili a questa categoria
+        const applicableWods = qualifyingWods.filter(wid => {
+          if (wid.includes('open') && cat !== 'Open') return false;
+          if (wid.includes('scaled') && cat === 'Open') return false;
+          if (wid.includes('experience') && cat !== 'Experience' && team.id !== 'exp-9') return false;
+          if (wid === 'wod-a-marlin') return true; // Tutti fanno MARLIN
+          if (wid === 'wod-c-scaled-exp' && (cat === 'Scaled' || cat === 'Experience' || team.id === 'exp-9')) return true;
+          if (wid === 'wod-c-open' && cat === 'Open') return true;
+          if (wid === 'wod-b-experience' && (cat === 'Experience' && team.id !== 'exp-9')) return true;
+          if (wid === 'wod-b-scaled' && (cat === 'Scaled' || team.id === 'exp-9')) return true;
+          if (wid === 'wod-b-open' && cat === 'Open') return true;
+          return false;
+        });
+        
+        applicableWods.forEach(wodId => {
+          const score = teamScores[wodId];
+          if (score) {
+            wodsCompleted++;
+            // Per For Reps: più reps = meglio (punti = reps)
+            // Per For Time: meno tempo = meglio (punti = -tempo per ordinare)
+            if (score.workoutType === 'For Reps' || score.workoutType === 'AMRAP') {
+              totalPoints += score.reps || 0;
+            } else {
+              // For Time: usiamo reps completate come punti (o tempo inverso)
+              totalPoints += score.reps || 0;
+            }
+          }
+        });
+        
+        return {
+          team,
+          totalPoints,
+          wodsCompleted
+        };
+      });
+      
+      // Ordina per punti (discendente) e prendi top 3
+      rankings.sort((a, b) => b.totalPoints - a.totalPoints);
+      results[cat] = rankings.slice(0, 3).map(r => r.team);
+    });
+    
+    // Mostra risultati
+    let msg = '🏆 TOP 3 PER CATEGORIA:\n\n';
+    categories.forEach(cat => {
+      msg += `${cat}:\n`;
+      results[cat].forEach((t, i) => {
+        msg += `  ${i+1}. ${t.teamName}\n`;
+      });
+      msg += '\n';
+    });
+    msg += 'Aggiornare la finale con questi team?';
+    
+    if (!confirm(msg)) return;
+    
+    // Aggiorna la timeline con i finalisti
+    const finaleHeats = timeline.filter(e => e.type === 'heat' && e.wodName && e.wodName.includes('FINALE'));
+    
+    if (finaleHeats.length === 0) {
+      toast('⚠️ Heat finale non trovate nella timeline!');
+      return;
+    }
+    
+    // Aggiorna ogni heat finale con i top 3 della categoria corrispondente
+    for (const heat of finaleHeats) {
+      const cat = heat.category;
+      if (results[cat]) {
+        heat.teams = results[cat].map((t, i) => ({
+          id: t.id,
+          teamName: t.teamName,
+          member1: t.member1,
+          member2: t.member2,
+          number: t.number,
+          category: t.category
+        }));
+      }
+    }
+    
+    // Salva timeline aggiornata su Firebase
+    await set(ref(db, 'ark_timeline'), timeline);
+    
+    renderTimeline();
+    toast('🏆 Finale aggiornata con i Top 3!');
+    
+  } catch (error) {
+    console.error('Errore generazione finale:', error);
+    toast('❌ Errore: ' + error.message);
+  }
+}
 
 window.generateTimeline = function() {
   const pauseHeats = parseInt(document.getElementById('pause-between-heats').value) || 3;
