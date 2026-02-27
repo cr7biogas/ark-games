@@ -961,8 +961,15 @@ onValue(ref(db, PATHS.timer), (snap) => {
       
       // If ready screen is showing, go to scoring
       const readyScreen = document.getElementById('readyScreen');
-      if (readyScreen.classList.contains('show') && currentWod && currentWod.id === timer.activeWorkout) {
-        goToScoring();
+      if (readyScreen.classList.contains('show') && currentTeam) {
+        // Make sure we have the workout loaded
+        if (!currentWod && timer.activeWorkout && workoutsCache[timer.activeWorkout]) {
+          currentWod = workoutsCache[timer.activeWorkout];
+          movements = currentWod.movements || [];
+        }
+        if (currentWod) {
+          goToScoring();
+        }
       }
       
       // Update sync timer bar if exists
