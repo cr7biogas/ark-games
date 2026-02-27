@@ -1561,24 +1561,23 @@ window.jumpToHeat = async function(idx) {
   await waitForJudgeConfirmationsManual(occupiedLanes, statusEl, event);
   
   // All confirmed - start countdown!
-  statusEl.innerHTML = `🚀 <b>Tutti pronti!</b> Avvio countdown...`;
-  await new Promise(r => setTimeout(r, 1000));
+  statusEl.innerHTML = `🚀 <b>Tutti pronti!</b> Avvio countdown 10 sec...`;
+  await new Promise(r => setTimeout(r, 500));
   
-  // Start 10 second countdown
-  const countdownStart = getSyncedTime();
+  // Start 10 second countdown - startAt = when timer will actually start
+  const now = getSyncedTime();
+  const startAt = now + 10000; // Timer starts in 10 seconds
   await update(ref(db, PATHS.timer), {
     status: 'countdown',
-    countdownStart: countdownStart
+    startAt: startAt
   });
   
-  // Wait for countdown
-  await new Promise(r => setTimeout(r, 10000));
+  // Wait for countdown to finish
+  await new Promise(r => setTimeout(r, 10500));
   
-  // GO!
-  const startAt = getSyncedTime();
+  // GO! Timer is now running
   await update(ref(db, PATHS.timer), {
-    status: 'running',
-    startAt: startAt
+    status: 'running'
   });
   
   statusEl.innerHTML = `▶️ <b>${event.wodName}</b> — Heat ${event.heatNum} IN CORSO`;
