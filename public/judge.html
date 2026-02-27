@@ -328,8 +328,8 @@ function renderLanes() {
   
   for (let lane = 1; lane <= 3; lane++) {
     const occupant = Object.values(lanesData).find(j => j.lane === lane);
-    const isOccupied = occupant && occupant.judgeId !== judge.id;
-    const isMe = occupant && occupant.judgeId === judge.id;
+    const isOccupied = occupant && judge && occupant.judgeId !== judge.id;
+    const isMe = occupant && judge && occupant.judgeId === judge.id;
     
     const btn = document.createElement('div');
     btn.className = 'lane-btn ' + (isOccupied ? 'occupied' : 'available');
