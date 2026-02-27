@@ -48,6 +48,13 @@ button{touch-action:manipulation}
 .rep-count{font-size:120px;font-weight:800;line-height:1}
 .rep-label{color:#888;font-size:16px;margin-top:8px}
 .movement-current{color:#FF6B35;font-size:18px;margin-top:16px;text-align:center}
+.movements-list{max-height:180px;overflow-y:auto;margin:0 16px;padding:8px;background:#111;border-radius:8px;font-size:14px}
+.movement-item{padding:8px 12px;margin:4px 0;border-radius:6px;display:flex;justify-content:space-between;align-items:center;transition:all 0.3s}
+.movement-item.done{background:#2ecc7133;color:#2ecc71;text-decoration:line-through}
+.movement-item.active{background:#FF6B3544;color:#FF6B35;font-weight:bold;transform:scale(1.02)}
+.movement-item.pending{background:#1a1a1a;color:#666}
+.movement-item .reps{font-weight:bold;min-width:50px;text-align:right}
+.movement-item .check{margin-right:8px}
 
 /* Buttons */
 .btn-row{display:flex;gap:8px;padding:16px;padding-bottom:max(32px, env(safe-area-inset-bottom, 32px))}
@@ -222,6 +229,9 @@ button{touch-action:manipulation}
       <div class="rep-label" id="repLabel">REPS</div>
       <div class="movement-current" id="currentMovement"></div>
     </div>
+    
+    <!-- Lista Movimenti -->
+    <div class="movements-list" id="movementsList"></div>
     
     <div class="btn-row">
       <button class="rep-btn btn-undo" onclick="undoRep()">↩️</button>
@@ -675,40 +685,107 @@ window.undoRep = function() {
 }
 
 function updateMovement() {
-  if (movements.length === 0) return;
-  // Parse movements to find current one based on rep count
-  let totalReps = 0;
-  let round = 1;
-  let display = '';
+  const listEl = document.getElementById('movementsList');
+  const currentEl = document.getElementById('currentMovement');
   
-  // Simple parsing: assume each movement has a number at the start
-  const parsed = movements.map(m => {
-    const match = m.match(/^(\d+)/);
-    return { text: m, count: match ? parseInt(match[1]) : 1 };
-  });
+  // Se non ci sono movements strutturati, nascondi la lista
+  if (!currentWod || !currentWod.movements || currentWod.movements.length === 0) {
+    listEl.style.display = 'none';
+    currentEl.textContent = '';
+    return;
+  }
   
-  let remaining = reps;
-  const totalPerRound = parsed.reduce((s, m) => s + m.count, 0);
-  round = Math.floor(remaining / totalPerRound) + 1;
-  remaining = remaining % totalPerRound;
+  listEl.style.display = 'block';
+  const movs = currentWod.movements;
   
-  let currentIdx = 0;
-  for (let i = 0; i < parsed.length; i++) {
-    if (remaining < parsed[i].count) {
-      currentIdx = i;
-      break;
+  // Calcola quale movimento è attivo in base alle rep
+  let cumulative = 0;
+  let activeIdx = -1;
+  let repsInCurrent = 0;
+  
+  for (let i = 0; i < movs.length; i++) {
+    const m = movs[i];
+    const targetReps = m.reps || 0;
+    
+    if (targetReps === null || targetReps === 0) {
+      // Max reps o esercizio senza target - sempre attivo se siamo qui
+      if (reps >= cumulative && activeIdx === -1) {
+        activeIdx = i;
+        repsInCurrent = reps - cumulative;
+      }
+      cumulative = reps + 1; // Non avanza automaticamente
+    } else {
+      if (reps < cumulative + targetReps) {
+        activeIdx = i;
+        repsInCurrent = reps - cumulative;
+        break;
+      }
+      cumulative += targetReps;
     }
-    remaining -= parsed[i].count;
-    currentIdx = i + 1;
   }
   
-  if (currentIdx < parsed.length) {
-    display = `Round ${round} — ${parsed[currentIdx].text} (${remaining}/${parsed[currentIdx].count})`;
-  } else {
-    display = `Round ${round} completato!`;
+  // Se tutte le rep sono fatte, ultimo movimento completato
+  if (activeIdx === -1) activeIdx = movs.length - 1;
+  
+  // Renderizza lista
+  let html = '';
+  cumulative = 0;
+  
+  for (let i = 0; i < movs.length; i++) {
+    const m = movs[i];
+    const targetReps = m.reps;
+    const isDone = targetReps && reps >= cumulative + targetReps;
+    const isActive = i === activeIdx;
+    const isPending = !isDone && !isActive;
+    
+    const statusClass = isDone ? 'done' : (isActive ? 'active' : 'pending');
+    const check = isDone ? '✅' : (isActive ? '🔥' : '⬜');
+    const roundLabel = m.round ? `R${m.round}` : '';
+    
+    // Calcola rep fatte in questo movimento
+    let repsHere = 0;
+    if (isDone) {
+      repsHere = targetReps;
+    } else if (isActive) {
+      repsHere = reps - cumulative;
+    }
+    
+    const repsDisplay = targetReps ? `${repsHere}/${targetReps}` : (isActive ? repsHere : '-');
+    
+    html += `<div class="movement-item ${statusClass}" id="mov-${i}">
+      <span><span class="check">${check}</span>${roundLabel ? `<b>${roundLabel}</b> ` : ''}${m.name}${m.note ? ` <small>(${m.note})</small>` : ''}</span>
+      <span class="reps">${repsDisplay}</span>
+    </div>`;
+    
+    if (targetReps) cumulative += targetReps;
   }
   
-  document.getElementById('currentMovement').textContent = display;
+  listEl.innerHTML = html;
+  
+  // Mostra movimento corrente in alto
+  const activeMov = movs[activeIdx];
+  if (activeMov) {
+    const targetReps = activeMov.reps;
+    const repsHere = reps - (cumulative - (targetReps || 0));
+    currentEl.innerHTML = `🔥 <b>${activeMov.name}</b>${targetReps ? ` (${Math.max(0, reps - getRepsBefore(activeIdx))}/${targetReps})` : ''}`;
+  }
+  
+  // Scrolla al movimento attivo
+  const activeEl = document.getElementById('mov-' + activeIdx);
+  if (activeEl) {
+    activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// Helper: calcola rep totali prima di un movimento
+function getRepsBefore(idx) {
+  if (!currentWod || !currentWod.movements) return 0;
+  let total = 0;
+  for (let i = 0; i < idx; i++) {
+    const m = currentWod.movements[i];
+    if (m.reps && m.reps > 0) total += m.reps;
+  }
+  return total;
 }
 
 // ========== SUBMIT ==========
