@@ -11,7 +11,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Team definitions
+// Team aggiornati - 27 Feb 2026
 const teams = {
   experience: [
     { id: 'exp-1', teamName: '🦊 Antonella & Bianca' },
@@ -19,27 +19,27 @@ const teams = {
     { id: 'exp-3', teamName: '🐰 Rebecca & Antonella' },
     { id: 'exp-4', teamName: '🦎 Norca & Francesco' },
     { id: 'exp-5', teamName: '🐺 Vito & Iacopo' },
-    { id: 'exp-6', teamName: '🦌 Anna & Mirko' },
-    { id: 'exp-7', teamName: '🦡 Marika & Silvia' },
     { id: 'exp-8', teamName: '🦋 Ninfa & Ilenia' },
     { id: 'exp-9', teamName: '🦏 Niko & Maurizio' }
   ],
   scaled: [
+    { id: 'exp-6', teamName: '🦌 Anna & Mirko' },
+    { id: 'exp-7', teamName: '🦡 Marika & Silvia' },
     { id: 'sca-1', teamName: '🦁 Alessio & Beatrice' },
     { id: 'sca-2', teamName: '🐆 Claudia & Aurora' },
-    { id: 'sca-3', teamName: '🐻 Matilde & Cristiano' },
-    { id: 'sca-4', teamName: '🐅 Michela & Michele' },
-    { id: 'sca-5', teamName: '🦅 Laura & Eugenio' },
-    { id: 'sca-6', teamName: '🐗 Simone & Francesco' }
+    { id: 'sca-3', teamName: '🐻 Matilde & Cristiano' }
   ],
   open: [
     { id: 'ope-1', teamName: '🦈 Marco & Emanuele' },
     { id: 'ope-2', teamName: '🐊 Ludovica & Salvatore' },
-    { id: 'ope-3', teamName: '🦂 Moira & Daniele' }
+    { id: 'ope-3', teamName: '🦂 Moira & Daniele' },
+    { id: 'sca-4', teamName: '🐅 Michela & Michele' },
+    { id: 'sca-5', teamName: '🦅 Laura & Eugenio' },
+    { id: 'sca-6', teamName: '🐗 Simone & Francesco' }
   ]
 };
 
-// Timeline ufficiale - 3 LANES
+// Timeline
 const timeline = [];
 let heatCounter = 0;
 
@@ -74,22 +74,24 @@ function addPause(label, duration) {
 // ========================================
 console.log('📋 Generando WOD A - MARLIN...');
 
-// Experience: 9 team → 3 heat (3+3+3)
+// Experience: 7 team → 3 heat (3+3+1)
 addHeat('wod-a-marlin', 'WOD A - MARLIN', 12, 'Experience', teams.experience.slice(0, 3));
 addPause('Cambio Team', 3);
 addHeat('wod-a-marlin', 'WOD A - MARLIN', 12, 'Experience', teams.experience.slice(3, 6));
 addPause('Cambio Team', 3);
-addHeat('wod-a-marlin', 'WOD A - MARLIN', 12, 'Experience', teams.experience.slice(6, 9));
+addHeat('wod-a-marlin', 'WOD A - MARLIN', 12, 'Experience', teams.experience.slice(6, 7));
 addPause('Cambio Categoria', 5);
 
-// Scaled: 6 team → 2 heat (3+3)
+// Scaled: 5 team → 2 heat (3+2)
 addHeat('wod-a-marlin', 'WOD A - MARLIN', 12, 'Scaled', teams.scaled.slice(0, 3));
 addPause('Cambio Team', 3);
-addHeat('wod-a-marlin', 'WOD A - MARLIN', 12, 'Scaled', teams.scaled.slice(3, 6));
+addHeat('wod-a-marlin', 'WOD A - MARLIN', 12, 'Scaled', teams.scaled.slice(3, 5));
 addPause('Cambio Categoria', 5);
 
-// Open: 3 team → 1 heat
-addHeat('wod-a-marlin', 'WOD A - MARLIN', 12, 'Open', teams.open);
+// Open: 6 team → 2 heat (3+3)
+addHeat('wod-a-marlin', 'WOD A - MARLIN', 12, 'Open', teams.open.slice(0, 3));
+addPause('Cambio Team', 3);
+addHeat('wod-a-marlin', 'WOD A - MARLIN', 12, 'Open', teams.open.slice(3, 6));
 
 // ========================================
 // PAUSA PRANZO
@@ -104,22 +106,24 @@ heatCounter = 0;
 // ========================================
 console.log('📋 Generando WOD B - GORILLA SILVERBACK...');
 
-// Experience: versione Experience (9 team → 3 heat)
+// Experience: 7 team → 3 heat (3+3+1)
 addHeat('wod-b-experience', 'WOD B - GORILLA (Experience)', 12, 'Experience', teams.experience.slice(0, 3));
 addPause('Cambio Team', 3);
 addHeat('wod-b-experience', 'WOD B - GORILLA (Experience)', 12, 'Experience', teams.experience.slice(3, 6));
 addPause('Cambio Team', 3);
-addHeat('wod-b-experience', 'WOD B - GORILLA (Experience)', 12, 'Experience', teams.experience.slice(6, 9));
+addHeat('wod-b-experience', 'WOD B - GORILLA (Experience)', 12, 'Experience', teams.experience.slice(6, 7));
 addPause('Cambio Categoria', 5);
 
-// Scaled: versione Scaled
+// Scaled: 5 team → 2 heat (3+2)
 addHeat('wod-b-scaled', 'WOD B - GORILLA (Scaled)', 12, 'Scaled', teams.scaled.slice(0, 3));
 addPause('Cambio Team', 3);
-addHeat('wod-b-scaled', 'WOD B - GORILLA (Scaled)', 12, 'Scaled', teams.scaled.slice(3, 6));
+addHeat('wod-b-scaled', 'WOD B - GORILLA (Scaled)', 12, 'Scaled', teams.scaled.slice(3, 5));
 addPause('Cambio Categoria', 5);
 
-// Open: versione Open
-addHeat('wod-b-open', 'WOD B - GORILLA (Open)', 12, 'Open', teams.open);
+// Open: 6 team → 2 heat (3+3)
+addHeat('wod-b-open', 'WOD B - GORILLA (Open)', 12, 'Open', teams.open.slice(0, 3));
+addPause('Cambio Team', 3);
+addHeat('wod-b-open', 'WOD B - GORILLA (Open)', 12, 'Open', teams.open.slice(3, 6));
 
 // ========================================
 // PAUSA
@@ -134,29 +138,31 @@ heatCounter = 0;
 // ========================================
 console.log('📋 Generando WOD C - TIGRE SIBERIANA...');
 
-// Experience: versione Scaled/Experience (9 team → 3 heat)
+// Experience: 7 team → 3 heat (3+3+1)
 addHeat('wod-c-scaled-exp', 'WOD C - TIGRE (Experience)', 8, 'Experience', teams.experience.slice(0, 3));
 addPause('Cambio Team', 3);
 addHeat('wod-c-scaled-exp', 'WOD C - TIGRE (Experience)', 8, 'Experience', teams.experience.slice(3, 6));
 addPause('Cambio Team', 3);
-addHeat('wod-c-scaled-exp', 'WOD C - TIGRE (Experience)', 8, 'Experience', teams.experience.slice(6, 9));
+addHeat('wod-c-scaled-exp', 'WOD C - TIGRE (Experience)', 8, 'Experience', teams.experience.slice(6, 7));
 addPause('Cambio Categoria', 5);
 
-// Scaled: versione Scaled/Experience
+// Scaled: 5 team → 2 heat (3+2)
 addHeat('wod-c-scaled-exp', 'WOD C - TIGRE (Scaled)', 8, 'Scaled', teams.scaled.slice(0, 3));
 addPause('Cambio Team', 3);
-addHeat('wod-c-scaled-exp', 'WOD C - TIGRE (Scaled)', 8, 'Scaled', teams.scaled.slice(3, 6));
+addHeat('wod-c-scaled-exp', 'WOD C - TIGRE (Scaled)', 8, 'Scaled', teams.scaled.slice(3, 5));
 addPause('Cambio Categoria', 5);
 
-// Open: versione Open
-addHeat('wod-c-open', 'WOD C - TIGRE (Open)', 8, 'Open', teams.open);
+// Open: 6 team → 2 heat (3+3)
+addHeat('wod-c-open', 'WOD C - TIGRE (Open)', 8, 'Open', teams.open.slice(0, 3));
+addPause('Cambio Team', 3);
+addHeat('wod-c-open', 'WOD C - TIGRE (Open)', 8, 'Open', teams.open.slice(3, 6));
 
 // ========================================
-// FINE + PREMIAZIONI
+// PREMIAZIONI
 // ========================================
 addPause('🏆 PREMIAZIONI', 20);
 
-// Upload to Firebase
+// Upload
 async function uploadTimeline() {
   try {
     await set(ref(db, 'ark_timeline'), timeline);
@@ -173,19 +179,10 @@ async function uploadTimeline() {
     const mins = totalMinutes % 60;
     console.log(`⏱️ Durata totale: ${hours}h ${mins}min`);
     
-    // Riepilogo
-    console.log('\n📋 RIEPILOGO TIMELINE:');
-    console.log('========================');
-    
-    let wodA = timeline.filter(t => t.wodId === 'wod-a-marlin').length;
-    let wodB = timeline.filter(t => t.wodId && t.wodId.includes('wod-b')).length;
-    let wodC = timeline.filter(t => t.wodId && t.wodId.includes('wod-c')).length;
-    let pauses = timeline.filter(t => t.type === 'pause').length;
-    
-    console.log(`WOD A - MARLIN: ${wodA} heat`);
-    console.log(`WOD B - GORILLA: ${wodB} heat`);
-    console.log(`WOD C - TIGRE: ${wodC} heat`);
-    console.log(`Pause: ${pauses}`);
+    console.log('\n📋 RIEPILOGO:');
+    console.log('Experience: 7 team (3 heat)');
+    console.log('Scaled: 5 team (2 heat)');
+    console.log('Open: 6 team (2 heat)');
     
     process.exit(0);
   } catch (error) {

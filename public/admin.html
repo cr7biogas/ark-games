@@ -1597,105 +1597,124 @@ window.generateTimeline = function() {
   const lunchDuration = parseInt(document.getElementById('lunch-duration').value) || 0;
   const lunchAfterWod = parseInt(document.getElementById('lunch-after-wod').value) || 2;
   const bufferTime = parseInt(document.getElementById('buffer-time').value) || 0;
-  
-  // Get teams ordered: Experience → Scaled → Open
-  const categoryOrder = ['Experience', 'Scaled', 'Open'];
-  const allTeams = Object.values(teamsCache);
-  
-  // Get workouts per category
-  const wodsByCategory = {};
-  categoryOrder.forEach(cat => {
-    wodsByCategory[cat] = Object.values(workoutsCache)
-      .filter(w => w.categories && w.categories.includes(cat))
-      .sort((a, b) => a.order - b.order);
-  });
-  
+
+  // FIXED HEATS - non cambiare mai la composizione!
+  const fixedHeats = [
+    { teams: ["exp-1", "exp-2", "exp-3"], names: ["🦊 Volpi", "🦉 Gufi", "🐢 Tartarughe"], category: "Experience" },
+    { teams: ["exp-4", "exp-5", "exp-8"], names: ["🦌 Cervi", "🦩 Fenicotteri", "🦋 Farfalle"], category: "Experience" },
+    { teams: ["exp-9", "exp-7", "exp-6"], names: ["🦏 Rinoceronti", "🦭 Foche", "🐺 Lupi"], category: "Scaled" },
+    { teams: ["sca-1", "sca-2", "sca-3"], names: ["🐬 Delfini", "🦘 Canguri", "🦚 Pavoni"], category: "Scaled" },
+    { teams: ["sca-4", "sca-5", "sca-6"], names: ["🦈 Squali", "🐻 Orsi", "🐘 Elefanti"], category: "Open" },
+    { teams: ["ope-1", "ope-2", "ope-3"], names: ["🦁 Leoni", "🦅 Aquile", "🐆 Ghepardi"], category: "Open" }
+  ];
+
+  // WOD definitions
+  const wods = [
+    { id: "wod-a-marlin", name: "WOD A - MARLIN", duration: 12 },
+    { id: "wod-b", name: "WOD B - GORILLA", duration: 12, ids: { Experience: "wod-b-experience", Scaled: "wod-b-scaled", Open: "wod-b-open" } },
+    { id: "wod-c", name: "WOD C - TIGRE", duration: 8, ids: { Experience: "wod-c-scaled-exp", Scaled: "wod-c-scaled-exp", Open: "wod-c-open" } },
+    { id: "wod-d", name: "WOD D - FINALE", duration: 17, ids: { Experience: "wod-d-scaled-exp", Scaled: "wod-d-scaled-exp", Open: "wod-d-open" }, isFinal: true }
+  ];
+
   timeline = [];
   let currentTime = parseTimeHM(startTime);
-  
-  // For each workout number (WOD 1, WOD 2, WOD 3)
-  const maxWods = Math.max(...categoryOrder.map(c => wodsByCategory[c].length));
-  
-  for (let wodIndex = 0; wodIndex < maxWods; wodIndex++) {
-    // For each category in order
-    categoryOrder.forEach(cat => {
-      const wod = wodsByCategory[cat][wodIndex];
-      if (!wod) return;
-      
-      const catTeams = allTeams
-        .filter(t => t.category === cat)
-        .sort((a, b) => (a.number || 999) - (b.number || 999));
-      
-      // Create heats (3 teams per heat)
-      for (let i = 0; i < catTeams.length; i += 3) {
-        const heatTeams = catTeams.slice(i, i + 3);
-        const heatNum = Math.floor(i / 3) + 1;
-        const isLastHeatOfWod = (i + 3 >= catTeams.length);
-        const isLastHeatOfCategory = isLastHeatOfWod;
+  let order = 0;
+
+  wods.forEach((wod, wodIndex) => {
+    // For finale, all teams per category in one heat
+    if (wod.isFinal) {
+      const categories = ["Experience", "Scaled", "Open"];
+      categories.forEach((cat, catIdx) => {
+        // Experience finale: heat 1+2 + Rinoceronti
+        // Scaled finale: heat 3+4 senza Rinoceronti
+        // Open finale: heat 5+6
+        let catHeats;
+        if (cat === "Experience") {
+          catHeats = [fixedHeats[0], fixedHeats[1]]; // Exp heats
+          // Aggiungi Rinoceronti
+          catHeats.push({ teams: ["exp-9"], names: ["🦏 Rinoceronti"], category: "Experience" });
+        } else if (cat === "Scaled") {
+          // Scaled senza Rinoceronti (che è in heat 3 ma va in finale Experience)
+          catHeats = [
+            { teams: ["exp-7", "exp-6"], names: ["🦭 Foche", "🐺 Lupi"], category: "Scaled" },
+            fixedHeats[3]
+          ];
+        } else {
+          catHeats = [fixedHeats[4], fixedHeats[5]];
+        }
         
+        const allTeams = [];
+        catHeats.forEach(h => {
+          h.teams.forEach((tid, i) => {
+            allTeams.push({ teamId: tid, teamName: h.names[i] });
+          });
+        });
+
+        const wodId = wod.ids ? wod.ids[cat] : wod.id;
         timeline.push({
           type: 'heat',
-          wodId: wod.id,
+          order: order++,
+          wodId,
           wodName: wod.name,
-          wodDuration: wod.duration || wod.cap || 12,
+          wodDuration: wod.duration,
           category: cat,
-          heatNum,
-          teams: heatTeams,
+          heatNum: catIdx + 1,
+          teams: allTeams,
           startTime: currentTime,
-          duration: wod.duration || wod.cap || 12
+          duration: wod.duration
         });
-        
-        currentTime += (wod.duration || wod.cap || 12);
-        
-        // Add pause after heat
-        if (!isLastHeatOfWod) {
-          timeline.push({
-            type: 'pause',
-            duration: pauseHeats,
-            startTime: currentTime,
-            label: 'Pausa tra Heat'
-          });
+        currentTime += wod.duration;
+
+        if (catIdx < 2) {
+          timeline.push({ type: 'pause', order: order++, duration: pauseHeats, startTime: currentTime, label: 'Pausa' });
           currentTime += pauseHeats;
         }
-      }
-      
-      // Add longer pause between categories/wods
-      if (cat !== 'Open' || wodIndex < maxWods - 1) {
-        timeline.push({
-          type: 'pause',
-          duration: pauseWods,
-          startTime: currentTime,
-          label: 'Pausa tra WOD/Categoria'
-        });
-        currentTime += pauseWods;
-      }
-    });
-    
-    // Add LUNCH BREAK after specified WOD
-    if (lunchDuration > 0 && (wodIndex + 1) === lunchAfterWod) {
-      timeline.push({
-        type: 'lunch',
-        duration: lunchDuration,
-        startTime: currentTime,
-        label: '🍽️ PAUSA PRANZO'
       });
+    } else {
+      // Normal WODs - 6 heats fisse
+      fixedHeats.forEach((heat, heatIdx) => {
+        const teams = heat.teams.map((tid, i) => ({ teamId: tid, teamName: heat.names[i] }));
+        const wodId = wod.ids ? wod.ids[heat.category] : wod.id;
+
+        timeline.push({
+          type: 'heat',
+          order: order++,
+          wodId,
+          wodName: wod.name,
+          wodDuration: wod.duration,
+          category: heat.category,
+          heatNum: heatIdx + 1,
+          teams,
+          startTime: currentTime,
+          duration: wod.duration
+        });
+        currentTime += wod.duration;
+
+        if (heatIdx < 5) {
+          timeline.push({ type: 'pause', order: order++, duration: pauseHeats, startTime: currentTime, label: 'Pausa' });
+          currentTime += pauseHeats;
+        }
+      });
+    }
+
+    // Pause between WODs
+    if (wodIndex < wods.length - 1) {
+      timeline.push({ type: 'pause', order: order++, duration: pauseWods, startTime: currentTime, label: '☕ PAUSA' });
+      currentTime += pauseWods;
+    }
+
+    // Lunch after WOD B (wodIndex 1)
+    if (lunchDuration > 0 && wodIndex + 1 === lunchAfterWod) {
+      timeline.push({ type: 'lunch', order: order++, duration: lunchDuration, startTime: currentTime, label: '🍝 PAUSA PRANZO' });
       currentTime += lunchDuration;
     }
-    
-    // Add BUFFER for unexpected delays after each WOD round
-    if (bufferTime > 0 && wodIndex < maxWods - 1) {
-      timeline.push({
-        type: 'buffer',
-        duration: bufferTime,
-        startTime: currentTime,
-        label: '⚠️ Buffer Imprevisti'
-      });
-      currentTime += bufferTime;
-    }
-  }
-  
+  });
+
+  // Premiazione
+  timeline.push({ type: 'ceremony', order: order++, startTime: currentTime, label: '🏆 PREMIAZIONE' });
+
   renderTimeline();
-  toast('📅 Timeline generata!');
+  toast('📅 Timeline generata (heat fisse)!');
 }
 
 // Add imprevisto pause during competition

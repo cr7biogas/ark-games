@@ -429,9 +429,9 @@ const db = getDatabase(app);
 
 // Camere predefinite
 const DEFAULT_CAMERAS = [
-  { id: 'lane1', name: '🎯 Lane 1', url: 'http://10.135.224.49:8080/videofeed' },
-  { id: 'lane2', name: '🎯 Lane 2', url: 'http://10.135.224.88:8080/videofeed' },
-  { id: 'lane3', name: '🎯 Lane 3', url: 'http://10.135.224.176:8080/videofeed' },
+  { id: 'lane1', name: '🎯 Lane 1', url: 'http://192.168.8.173:8080/videofeed' },
+  { id: 'lane2', name: '🎯 Lane 2', url: 'http://192.168.8.127:8080/videofeed' },
+  { id: 'lane3', name: '🎯 Lane 3', url: '' },
   { id: 'panoramica', name: '🌐 Panoramica', url: '' },
   { id: 'mobile', name: '🎬 Mobile', url: '' }
 ];
@@ -764,17 +764,16 @@ window.autoAddAll = function() {
   document.getElementById('scanStatus').innerHTML = '<span style="color:#2ecc71;">Tutte le camere aggiunte!</span>';
 }
 
-// Carica camere da Firebase (primo caricamento: se non ci sono, salva i default)
-let firstCameraLoad = true;
+// Forza reset camere su Firebase con i nuovi IP
+set(ref(db, 'ark_regia/cameras'), DEFAULT_CAMERAS);
+set(ref(db, 'ark_regia/activeCamera'), null);
+
+// Carica camere da Firebase
 onValue(ref(db, 'ark_regia/cameras'), (snap) => {
   const data = snap.val();
   if (data && Array.isArray(data)) {
     cameras = data;
-  } else if (firstCameraLoad) {
-    // Solo se non ci sono dati, salva i default
-    set(ref(db, 'ark_regia/cameras'), DEFAULT_CAMERAS);
   }
-  firstCameraLoad = false;
   renderCameras();
 });
 
