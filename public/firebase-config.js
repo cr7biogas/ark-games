@@ -108,10 +108,11 @@ export const WORKOUT_TYPES = ['AMRAP', 'For Time', 'EMOM'];
 // ========== Database Paths ==========
 export const PATHS = {
   competition: 'ark_competitions/current',
-  athletes: 'ark_athletes',
+  athletes: 'ark_teams',
   judges: 'ark_judges',
   scores: 'ark_scores',
   workouts: 'ark_workouts',
   leaderboard: 'ark_leaderboard',
   timer: 'ark_timer',
+  timeline: 'ark_timeline',
 };
