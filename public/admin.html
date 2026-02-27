@@ -1871,7 +1871,7 @@ function renderTimeline() {
           </div>
         </div>
         <div style="margin-top:6px;font-size:13px;color:#888">
-          ${event.teams.map(t => t.teamName || t.name).join(' • ')}
+          ${event.teams.map((t, i) => `<span style="color:#FF6B35">L${i+1}</span> ${t.teamName || t.name}`).join(' &nbsp;•&nbsp; ')}
         </div>
         ${isCurrent ? '<div style="color:#FF6B35;font-size:12px;margin-top:4px">▶️ PROSSIMA</div>' : ''}
         ${isDone ? '<div style="color:#2ecc71;font-size:12px;margin-top:4px">✅ Completata</div>' : ''}
