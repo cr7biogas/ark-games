@@ -92,18 +92,9 @@
     
     .overlay.hidden { opacity: 0; }
     
-    /* Top Bar */
-    .top-bar {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      right: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
+    /* ===== ELEMENTI OVERLAY POSIZIONABILI ===== */
     .logo {
+      position: absolute;
       background: rgba(0,0,0,0.9);
       padding: 2vh 3vw;
       border-radius: 1.5vh;
@@ -111,11 +102,17 @@
       font-weight: bold;
       border: 3px solid #FF6B35;
       box-shadow: 0 0 20px rgba(255,107,53,0.5);
+      transition: all 0.5s ease;
     }
     
     .logo span { color: #FF6B35; text-shadow: 0 0 10px #FF6B35; }
+    .logo.hidden { opacity: 0; pointer-events: none; }
+    .logo.top-left { top: 20px; left: 20px; }
+    .logo.top-center { top: 20px; left: 50%; transform: translateX(-50%); }
+    .logo.top-right { top: 20px; right: 20px; }
     
     .wod-name {
+      position: absolute;
       background: linear-gradient(135deg, #FF6B35, #FF8C00);
       padding: 2vh 3vw;
       border-radius: 1.5vh;
@@ -123,16 +120,25 @@
       font-weight: bold;
       box-shadow: 0 0 25px rgba(255,107,53,0.7);
       text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      transition: all 0.5s ease;
     }
     
-    /* Timer centrale in basso */
+    .wod-name.hidden { opacity: 0; pointer-events: none; }
+    .wod-name.top-left { top: 20px; left: 20px; }
+    .wod-name.top-center { top: 20px; left: 50%; transform: translateX(-50%); }
+    .wod-name.top-right { top: 20px; right: 20px; }
+    
+    /* Timer posizionabile */
     .timer-container {
       position: absolute;
-      bottom: 3vh;
-      left: 50%;
-      transform: translateX(-50%);
       text-align: center;
+      transition: all 0.5s ease;
     }
+    
+    .timer-container.hidden { opacity: 0; pointer-events: none; }
+    .timer-container.bottom-center { bottom: 3vh; left: 50%; transform: translateX(-50%); }
+    .timer-container.top-center { top: 10vh; left: 50%; transform: translateX(-50%); }
+    .timer-container.center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
     
     .timer {
       font-size: clamp(60px, 18vw, 150px);
@@ -180,15 +186,29 @@
       font-weight: bold;
     }
     
-    /* Lane info in basso */
+    /* Lane info posizionabile */
     .lanes-bar {
       position: absolute;
-      bottom: 18vh;
-      left: 2vw;
-      right: 2vw;
       display: flex;
       justify-content: center;
       gap: 2vw;
+      transition: all 0.5s ease;
+    }
+    
+    .lanes-bar.hidden { opacity: 0; pointer-events: none; }
+    .lanes-bar.bottom { bottom: 18vh; left: 2vw; right: 2vw; flex-direction: row; }
+    .lanes-bar.left { left: 2vw; top: 50%; transform: translateY(-50%); flex-direction: column; gap: 1vh; }
+    .lanes-bar.right { right: 2vw; top: 50%; transform: translateY(-50%); flex-direction: column; gap: 1vh; }
+    
+    .lanes-bar.left .lane-card,
+    .lanes-bar.right .lane-card {
+      min-width: 15vw;
+      padding: 1.5vh 2vw;
+    }
+    
+    .lanes-bar.left .team-emoji,
+    .lanes-bar.right .team-emoji {
+      font-size: clamp(24px, 4vw, 40px);
     }
     
     .lane-card {
@@ -268,12 +288,14 @@
   
   <!-- Overlay (solo se attivato dalla regia) -->
   <div class="overlay hidden" id="overlay">
-    <div class="top-bar">
-      <div class="logo">🐾 <span>ARK</span> GAMES</div>
-      <div class="wod-name" id="wodName">In attesa...</div>
-    </div>
+    <!-- Logo posizionabile -->
+    <div class="logo top-left" id="logoEl">🐾 <span>ARK</span> GAMES</div>
     
-    <div class="lanes-bar" id="lanesBar">
+    <!-- WOD Name posizionabile -->
+    <div class="wod-name top-right" id="wodName">In attesa...</div>
+    
+    <!-- Lanes posizionabile -->
+    <div class="lanes-bar bottom" id="lanesBar">
       <div class="lane-card" id="lane1">
         <div class="lane-number">LANE 1</div>
         <span class="team-emoji" id="emoji1">🐾</span>
@@ -294,7 +316,7 @@
       </div>
     </div>
     
-    <div class="timer-container">
+    <div class="timer-container bottom-center" id="timerContainer">
       <div class="timer stopped" id="timer">00:00</div>
       <div class="timer-label" id="timerLabel">🐾 ARK GAMES 2026</div>
     </div>
@@ -558,14 +580,64 @@ onValue(ref(db, 'ark_regia/activeCamera'), (snap) => {
   }
 });
 
-// ===== OVERLAY TOGGLE =====
-onValue(ref(db, 'ark_regia/showOverlay'), (snap) => {
-  const show = snap.val();
-  if (show) {
+// ===== OVERLAY SETTINGS =====
+const logoEl = document.getElementById('logoEl');
+const wodNameEl = document.getElementById('wodName');
+const timerContainer = document.getElementById('timerContainer');
+const lanesBar = document.getElementById('lanesBar');
+
+// Classi di posizione disponibili
+const positionClasses = ['top-left', 'top-center', 'top-right', 'bottom-center', 'center', 'bottom', 'left', 'right', 'hidden'];
+
+function applyPosition(element, position) {
+  if (!element) return;
+  // Rimuovi tutte le classi di posizione
+  positionClasses.forEach(cls => element.classList.remove(cls));
+  // Aggiungi la nuova
+  if (position) element.classList.add(position);
+}
+
+onValue(ref(db, 'ark_regia/overlaySettings'), (snap) => {
+  const settings = snap.val();
+  
+  if (!settings) {
+    overlayEl.classList.add('hidden');
+    return;
+  }
+  
+  // Overlay globale
+  if (settings.visible) {
     overlayEl.classList.remove('hidden');
   } else {
     overlayEl.classList.add('hidden');
   }
+  
+  // Logo
+  if (settings.logo) {
+    applyPosition(logoEl, settings.logo.position);
+  }
+  
+  // WOD Name
+  if (settings.wod) {
+    applyPosition(wodNameEl, settings.wod.position);
+  }
+  
+  // Timer
+  if (settings.timer) {
+    applyPosition(timerContainer, settings.timer.position);
+  }
+  
+  // Lanes
+  if (settings.lanes) {
+    applyPosition(lanesBar, settings.lanes.position);
+  }
+});
+
+// Fallback per vecchio formato
+onValue(ref(db, 'ark_regia/showOverlay'), (snap) => {
+  const show = snap.val();
+  // Ignora se abbiamo già overlaySettings
+  // Questo è solo per retrocompatibilità
 });
 
 // ===== TIMER =====
@@ -580,7 +652,7 @@ function getSyncedTime() {
 
 const timerEl = document.getElementById('timer');
 const timerLabelEl = document.getElementById('timerLabel');
-const wodNameEl = document.getElementById('wodName');
+// wodNameEl già definito sopra per overlay positioning
 
 let timerInterval = null;
 

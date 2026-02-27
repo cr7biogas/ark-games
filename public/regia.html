@@ -365,16 +365,84 @@
       <!-- Camera previews verranno generate qui -->
     </div>
     
-    <!-- OVERLAY -->
+    <!-- OVERLAY CONTROLS ADVANCED -->
     <div class="overlay-controls">
       <h3>🎨 OVERLAY</h3>
       <button class="toggle-btn" id="overlayToggle" onclick="toggleOverlay()">
         Mostra Overlay ARK Games
       </button>
-      <div id="overlaySubControls" style="display:none; margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
-        <button class="toggle-btn active" id="toggleLogo" onclick="toggleElement('showLogo')" style="flex:1; padding:8px; font-size:11px;">Logo</button>
-        <button class="toggle-btn active" id="toggleTimer" onclick="toggleElement('showTimer')" style="flex:1; padding:8px; font-size:11px;">Timer</button>
-        <button class="toggle-btn active" id="toggleLanes" onclick="toggleElement('showLanes')" style="flex:1; padding:8px; font-size:11px;">Lanes</button>
+      
+      <!-- Controlli elementi -->
+      <div id="overlaySubControls" style="display:none; margin-top:10px;">
+        <!-- Toggle elementi -->
+        <div style="display:flex; gap:6px; margin-bottom:10px;">
+          <button class="toggle-btn active" id="toggleLogo" onclick="toggleElement('logo')" style="flex:1; padding:8px; font-size:11px;">🐾 Logo</button>
+          <button class="toggle-btn active" id="toggleWod" onclick="toggleElement('wod')" style="flex:1; padding:8px; font-size:11px;">📋 WOD</button>
+        </div>
+        <div style="display:flex; gap:6px; margin-bottom:10px;">
+          <button class="toggle-btn active" id="toggleTimer" onclick="toggleElement('timer')" style="flex:1; padding:8px; font-size:11px;">⏱️ Timer</button>
+          <button class="toggle-btn active" id="toggleLanes" onclick="toggleElement('lanes')" style="flex:1; padding:8px; font-size:11px;">🏃 Lanes</button>
+        </div>
+        
+        <!-- Posizioni preset -->
+        <div style="border-top:1px solid #333; padding-top:10px; margin-top:10px;">
+          <div style="font-size:11px; color:#888; margin-bottom:8px;">📍 POSIZIONI</div>
+          
+          <!-- Logo posizione -->
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-size:11px; width:50px; color:#aaa;">Logo:</span>
+            <select id="posLogo" onchange="updatePosition('logo', this.value)" style="flex:1; padding:6px; background:#1a1a1a; color:#fff; border:1px solid #333; border-radius:4px; font-size:11px;">
+              <option value="top-left">↖ Alto Sx</option>
+              <option value="top-center">↑ Alto Centro</option>
+              <option value="top-right">↗ Alto Dx</option>
+              <option value="hidden">🚫 Nascosto</option>
+            </select>
+          </div>
+          
+          <!-- WOD posizione -->
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-size:11px; width:50px; color:#aaa;">WOD:</span>
+            <select id="posWod" onchange="updatePosition('wod', this.value)" style="flex:1; padding:6px; background:#1a1a1a; color:#fff; border:1px solid #333; border-radius:4px; font-size:11px;">
+              <option value="top-right">↗ Alto Dx</option>
+              <option value="top-center">↑ Alto Centro</option>
+              <option value="top-left">↖ Alto Sx</option>
+              <option value="hidden">🚫 Nascosto</option>
+            </select>
+          </div>
+          
+          <!-- Timer posizione -->
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-size:11px; width:50px; color:#aaa;">Timer:</span>
+            <select id="posTimer" onchange="updatePosition('timer', this.value)" style="flex:1; padding:6px; background:#1a1a1a; color:#fff; border:1px solid #333; border-radius:4px; font-size:11px;">
+              <option value="bottom-center">↓ Basso Centro</option>
+              <option value="top-center">↑ Alto Centro</option>
+              <option value="center">⊙ Centro</option>
+              <option value="hidden">🚫 Nascosto</option>
+            </select>
+          </div>
+          
+          <!-- Lanes posizione -->
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-size:11px; width:50px; color:#aaa;">Lanes:</span>
+            <select id="posLanes" onchange="updatePosition('lanes', this.value)" style="flex:1; padding:6px; background:#1a1a1a; color:#fff; border:1px solid #333; border-radius:4px; font-size:11px;">
+              <option value="bottom">↓ Basso</option>
+              <option value="left">← Sinistra</option>
+              <option value="right">→ Destra</option>
+              <option value="hidden">🚫 Nascosto</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Preset rapidi -->
+        <div style="border-top:1px solid #333; padding-top:10px; margin-top:10px;">
+          <div style="font-size:11px; color:#888; margin-bottom:8px;">⚡ PRESET RAPIDI</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button onclick="applyPreset('full')" style="flex:1; padding:6px; background:#2ecc71; border:none; border-radius:4px; color:#fff; font-size:10px; cursor:pointer; min-width:60px;">Completo</button>
+            <button onclick="applyPreset('minimal')" style="flex:1; padding:6px; background:#3498db; border:none; border-radius:4px; color:#fff; font-size:10px; cursor:pointer; min-width:60px;">Minimale</button>
+            <button onclick="applyPreset('timer-only')" style="flex:1; padding:6px; background:#9b59b6; border:none; border-radius:4px; color:#fff; font-size:10px; cursor:pointer; min-width:60px;">Solo Timer</button>
+            <button onclick="applyPreset('clean')" style="flex:1; padding:6px; background:#e74c3c; border:none; border-radius:4px; color:#fff; font-size:10px; cursor:pointer; min-width:60px;">Pulito</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -595,25 +663,122 @@ window.addCamera = function() {
   renderCameras();
 }
 
-// Toggle overlay
+// Toggle overlay principale
 window.toggleOverlay = function() {
   showOverlay = !showOverlay;
   const btn = document.getElementById('overlayToggle');
   btn.classList.toggle('active', showOverlay);
   btn.textContent = showOverlay ? '✓ Overlay Attivo' : 'Mostra Overlay ARK Games';
-  document.getElementById('overlaySubControls').style.display = showOverlay ? 'flex' : 'none';
+  document.getElementById('overlaySubControls').style.display = showOverlay ? 'block' : 'none';
 
-  set(ref(db, 'ark_regia/showOverlay'), showOverlay);
+  set(ref(db, 'ark_regia/overlaySettings/visible'), showOverlay);
 }
 
-// Toggle singoli elementi overlay
-const overlayElements = { showLogo: true, showTimer: true, showLanes: true };
-window.toggleElement = function(key) {
-  overlayElements[key] = !overlayElements[key];
-  const btnMap = { showLogo: 'toggleLogo', showTimer: 'toggleTimer', showLanes: 'toggleLanes' };
-  document.getElementById(btnMap[key]).classList.toggle('active', overlayElements[key]);
-  set(ref(db, 'ark_regia/overlayElements'), overlayElements);
+// Impostazioni overlay completo
+const overlaySettings = {
+  visible: false,
+  logo: { visible: true, position: 'top-left' },
+  wod: { visible: true, position: 'top-right' },
+  timer: { visible: true, position: 'bottom-center' },
+  lanes: { visible: true, position: 'bottom' }
+};
+
+// Toggle singolo elemento
+window.toggleElement = function(element) {
+  overlaySettings[element].visible = !overlaySettings[element].visible;
+  const btn = document.getElementById('toggle' + element.charAt(0).toUpperCase() + element.slice(1));
+  btn.classList.toggle('active', overlaySettings[element].visible);
+  
+  // Se nascosto, aggiorna anche la posizione
+  if (!overlaySettings[element].visible) {
+    document.getElementById('pos' + element.charAt(0).toUpperCase() + element.slice(1)).value = 'hidden';
+    overlaySettings[element].position = 'hidden';
+  } else {
+    // Ripristina posizione default
+    const defaults = { logo: 'top-left', wod: 'top-right', timer: 'bottom-center', lanes: 'bottom' };
+    overlaySettings[element].position = defaults[element];
+    document.getElementById('pos' + element.charAt(0).toUpperCase() + element.slice(1)).value = defaults[element];
+  }
+  
+  set(ref(db, 'ark_regia/overlaySettings'), overlaySettings);
 }
+
+// Aggiorna posizione elemento
+window.updatePosition = function(element, position) {
+  overlaySettings[element].position = position;
+  overlaySettings[element].visible = position !== 'hidden';
+  
+  const btn = document.getElementById('toggle' + element.charAt(0).toUpperCase() + element.slice(1));
+  btn.classList.toggle('active', overlaySettings[element].visible);
+  
+  set(ref(db, 'ark_regia/overlaySettings'), overlaySettings);
+}
+
+// Preset rapidi
+window.applyPreset = function(preset) {
+  switch(preset) {
+    case 'full':
+      overlaySettings.logo = { visible: true, position: 'top-left' };
+      overlaySettings.wod = { visible: true, position: 'top-right' };
+      overlaySettings.timer = { visible: true, position: 'bottom-center' };
+      overlaySettings.lanes = { visible: true, position: 'bottom' };
+      break;
+    case 'minimal':
+      overlaySettings.logo = { visible: true, position: 'top-left' };
+      overlaySettings.wod = { visible: false, position: 'hidden' };
+      overlaySettings.timer = { visible: true, position: 'bottom-center' };
+      overlaySettings.lanes = { visible: false, position: 'hidden' };
+      break;
+    case 'timer-only':
+      overlaySettings.logo = { visible: false, position: 'hidden' };
+      overlaySettings.wod = { visible: false, position: 'hidden' };
+      overlaySettings.timer = { visible: true, position: 'center' };
+      overlaySettings.lanes = { visible: false, position: 'hidden' };
+      break;
+    case 'clean':
+      overlaySettings.logo = { visible: false, position: 'hidden' };
+      overlaySettings.wod = { visible: false, position: 'hidden' };
+      overlaySettings.timer = { visible: false, position: 'hidden' };
+      overlaySettings.lanes = { visible: false, position: 'hidden' };
+      break;
+  }
+  
+  // Aggiorna UI
+  updateOverlayUI();
+  
+  // Salva su Firebase
+  set(ref(db, 'ark_regia/overlaySettings'), overlaySettings);
+}
+
+// Aggiorna UI controlli overlay
+function updateOverlayUI() {
+  ['logo', 'wod', 'timer', 'lanes'].forEach(el => {
+    const btn = document.getElementById('toggle' + el.charAt(0).toUpperCase() + el.slice(1));
+    const select = document.getElementById('pos' + el.charAt(0).toUpperCase() + el.slice(1));
+    if (btn) btn.classList.toggle('active', overlaySettings[el].visible);
+    if (select) select.value = overlaySettings[el].position;
+  });
+}
+
+// Carica impostazioni overlay da Firebase
+onValue(ref(db, 'ark_regia/overlaySettings'), (snap) => {
+  const data = snap.val();
+  if (data) {
+    showOverlay = data.visible || false;
+    if (data.logo) overlaySettings.logo = data.logo;
+    if (data.wod) overlaySettings.wod = data.wod;
+    if (data.timer) overlaySettings.timer = data.timer;
+    if (data.lanes) overlaySettings.lanes = data.lanes;
+    
+    // Aggiorna UI
+    const btn = document.getElementById('overlayToggle');
+    btn.classList.toggle('active', showOverlay);
+    btn.textContent = showOverlay ? '✓ Overlay Attivo' : 'Mostra Overlay ARK Games';
+    document.getElementById('overlaySubControls').style.display = showOverlay ? 'block' : 'none';
+    
+    updateOverlayUI();
+  }
+});
 
 // ===== TASTI RAPIDI =====
 document.addEventListener('keydown', (e) => {
