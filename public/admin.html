@@ -343,6 +343,7 @@ textarea{min-height:80px;resize:vertical}
   <div class="card">
     <div class="row">
       <select id="score-category" onchange="populateScoreDropdowns(); loadScoresTable()">
+        <option value="ALL">📋 TUTTI</option>
         <option value="Experience">🌱 Experience</option>
         <option value="Scaled">💪 Scaled</option>
         <option value="Open">🔥 Open</option>
@@ -859,9 +860,16 @@ let scoresCache = {};
 
 function populateScoreDropdowns() {
   const cat = document.getElementById('score-category')?.value || 'Experience';
-  const filteredWods = Object.values(workoutsCache)
-    .filter(w => w.categories && w.categories.includes(cat))
-    .sort((a,b) => a.order - b.order);
+  
+  // Se "Tutti" è selezionato, mostra tutti i workout
+  let filteredWods;
+  if (cat === 'ALL') {
+    filteredWods = Object.values(workoutsCache).sort((a,b) => a.order - b.order);
+  } else {
+    filteredWods = Object.values(workoutsCache)
+      .filter(w => w.categories && w.categories.includes(cat))
+      .sort((a,b) => a.order - b.order);
+  }
   
   const wodOptions = filteredWods.map(w => `<option value="${w.id}">${w.name} (${w.type})</option>`).join('');
   
@@ -876,11 +884,18 @@ function populateScoreDropdowns() {
 
 function populateTeamDropdown() {
   const cat = document.getElementById('score-category').value;
-  const teams = Object.values(teamsCache)
-    .filter(t => t.category === cat)
-    .sort((a,b) => (a.number || 999) - (b.number || 999));
   
-  const options = teams.map(t => `<option value="${t.id}">${t.number ? '#' + t.number + ' ' : ''}${t.teamName || t.name}</option>`).join('');
+  // Se "Tutti" è selezionato, mostra tutti i team
+  let teams;
+  if (cat === 'ALL') {
+    teams = Object.values(teamsCache).sort((a,b) => (a.number || 999) - (b.number || 999));
+  } else {
+    teams = Object.values(teamsCache)
+      .filter(t => t.category === cat)
+      .sort((a,b) => (a.number || 999) - (b.number || 999));
+  }
+  
+  const options = teams.map(t => `<option value="${t.id}">${t.number ? '#' + t.number + ' ' : ''}${t.teamName || t.name} (${t.category})</option>`).join('');
   document.getElementById('quick-team').innerHTML = '<option value="">Team...</option>' + options;
 }
 
@@ -897,14 +912,27 @@ window.loadScoresTable = function() {
   
   populateTeamDropdown();
   
-  const teams = Object.values(teamsCache)
-    .filter(t => t.category === cat)
-    .sort((a,b) => (a.number || 999) - (b.number || 999));
+  // Se "Tutti" è selezionato, mostra tutti i team
+  let teams;
+  if (cat === 'ALL') {
+    teams = Object.values(teamsCache).sort((a,b) => (a.number || 999) - (b.number || 999));
+  } else {
+    teams = Object.values(teamsCache)
+      .filter(t => t.category === cat)
+      .sort((a,b) => (a.number || 999) - (b.number || 999));
+  }
   
-  // Filter workouts by selected category
-  const wods = wodId ? [workoutsCache[wodId]] : Object.values(workoutsCache)
-    .filter(w => w.categories && w.categories.includes(cat))
-    .sort((a,b) => a.order - b.order);
+  // Filter workouts by selected category (o tutti se ALL)
+  let wods;
+  if (wodId) {
+    wods = [workoutsCache[wodId]];
+  } else if (cat === 'ALL') {
+    wods = Object.values(workoutsCache).sort((a,b) => a.order - b.order);
+  } else {
+    wods = Object.values(workoutsCache)
+      .filter(w => w.categories && w.categories.includes(cat))
+      .sort((a,b) => a.order - b.order);
+  }
   
   if (wods.length === 0 || teams.length === 0) {
     tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;color:#888;text-align:center">Nessun dato</td></tr>';
