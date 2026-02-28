@@ -939,6 +939,32 @@ window.loadScoresTable = function() {
     return;
   }
   
+  // Pre-calculate ranks per workout/category BEFORE building table
+  // Ranks must be calculated within each category separately
+  const categories = cat === 'ALL' ? ['Experience', 'Scaled', 'Open'] : [cat];
+  
+  categories.forEach(category => {
+    const catTeams = teams.filter(t => t.category === category);
+    const catWods = Object.values(workoutsCache).filter(w => w.categories?.includes(category));
+    
+    catWods.forEach(wod => {
+      const teamsWithScores = catTeams.filter(t => scoresCache[t.id]?.[wod.id]);
+      
+      // Sort by score
+      if (wod.type === 'For Time') {
+        teamsWithScores.sort((a, b) => (scoresCache[a.id][wod.id].time || 9999) - (scoresCache[b.id][wod.id].time || 9999));
+      } else {
+        teamsWithScores.sort((a, b) => (scoresCache[b.id][wod.id].reps || 0) - (scoresCache[a.id][wod.id].reps || 0));
+      }
+      
+      // Assign ranks
+      teamsWithScores.forEach((team, idx) => {
+        const score = scoresCache[team.id][wod.id];
+        score._rank = score.rankOverride ? (score.manualRank || idx + 1) : (idx + 1);
+      });
+    });
+  });
+  
   let html = '';
   let count = 0;
   
