@@ -1,5 +1,5 @@
 @echo off
-echo ARK Games - Server Locale
+echo ARK Games 2 - Server Locale
 echo ========================
 echo.
 echo Apri nel browser: http://localhost:8080/admin.html
