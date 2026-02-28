@@ -1550,8 +1550,8 @@ window.jumpToHeat = async function(idx) {
     });
   }
   
-  // Clear ready judges
-  await remove(ref(db, PATHS.timer + '/readyJudges'));
+  // NON cancellare i giudici registrati - servono per il flusso
+  // await remove(ref(db, PATHS.timer + '/readyJudges'));
   
   toast(`✅ Heat ${event.heatNum} caricata — attendo conferma giudici...`);
   
@@ -1590,21 +1590,21 @@ function waitForJudgeConfirmationsManual(lanes, statusEl, event) {
   return new Promise((resolve) => {
     let confirmedCount = 0;
     
-    // Conta solo i giudici effettivamente registrati nelle lane
-    const getActiveJudgesCount = () => {
-      let count = 0;
-      for (const lane of lanes) {
-        const hasJudge = Object.values(readyJudgesCache).some(j => j.lane === lane);
-        if (hasJudge) count++;
-      }
-      return Math.max(count, 1); // Almeno 1
-    };
-    
-    const unsubscribe = onValue(ref(db, PATHS.timer + '/laneStatus'), (snap) => {
+    const unsubscribe = onValue(ref(db, PATHS.timer + '/laneStatus'), async (snap) => {
       const statuses = snap.val() || {};
-      const totalNeeded = getActiveJudgesCount();
-      confirmedCount = 0;
       
+      // Conta i giudici attualmente registrati nelle lane (lettura fresca)
+      const judgesSnap = await get(ref(db, PATHS.timer + '/readyJudges'));
+      const judges = judgesSnap.val() || {};
+      
+      let totalNeeded = 0;
+      for (const lane of lanes) {
+        const hasJudge = Object.values(judges).some(j => j.lane === lane);
+        if (hasJudge) totalNeeded++;
+      }
+      totalNeeded = Math.max(totalNeeded, 1); // Almeno 1
+      
+      confirmedCount = 0;
       for (const lane of lanes) {
         const s = statuses[lane];
         if (s && (s.status === 'confirmed' || s.status === 'absent')) {
@@ -2054,17 +2054,7 @@ function waitForJudgeConfirmations(lanes, statusEl, event) {
   return new Promise((resolve) => {
     let confirmedCount = 0;
     
-    // Conta solo i giudici effettivamente registrati nelle lane
-    const getActiveJudgesCount = () => {
-      let count = 0;
-      for (const lane of lanes) {
-        const hasJudge = Object.values(readyJudgesCache).some(j => j.lane === lane);
-        if (hasJudge) count++;
-      }
-      return Math.max(count, 1); // Almeno 1
-    };
-    
-    const unsubscribe = onValue(ref(db, PATHS.timer + '/laneStatus'), (snap) => {
+    const unsubscribe = onValue(ref(db, PATHS.timer + '/laneStatus'), async (snap) => {
       if (!autoModeActive) {
         unsubscribe();
         resolve();
@@ -2072,9 +2062,19 @@ function waitForJudgeConfirmations(lanes, statusEl, event) {
       }
       
       const statuses = snap.val() || {};
-      const totalNeeded = getActiveJudgesCount();
-      confirmedCount = 0;
       
+      // Conta i giudici attualmente registrati nelle lane (lettura fresca)
+      const judgesSnap = await get(ref(db, PATHS.timer + '/readyJudges'));
+      const judges = judgesSnap.val() || {};
+      
+      let totalNeeded = 0;
+      for (const lane of lanes) {
+        const hasJudge = Object.values(judges).some(j => j.lane === lane);
+        if (hasJudge) totalNeeded++;
+      }
+      totalNeeded = Math.max(totalNeeded, 1); // Almeno 1
+      
+      confirmedCount = 0;
       for (const lane of lanes) {
         const s = statuses[lane];
         if (s && (s.status === 'confirmed' || s.status === 'absent')) {
