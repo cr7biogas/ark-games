@@ -248,6 +248,8 @@ button{touch-action:manipulation}
   <div class="result-screen" id="resultScreen">
     <div style="font-size:48px">✅</div>
     <h2>Score Registrato!</h2>
+    <div class="result-team" id="resultTeam" style="font-size:24px;font-weight:700;color:#FF6B35;margin:8px 0">-</div>
+    <div class="result-members" id="resultMembers" style="font-size:16px;color:#888;margin-bottom:12px">-</div>
     <div class="result-score" id="resultScore">-</div>
     <p style="color:#888" id="resultDetails"></p>
     <button class="rep-btn btn-rep" style="margin-top:24px;max-width:300px" onclick="nextTeam()">Prossimo Team →</button>
@@ -830,12 +832,14 @@ window.submitScore = async function(auto = false) {
   // Show result
   document.getElementById('scoringScreen').style.display = 'none';
   document.getElementById('resultScreen').style.display = 'flex';
+  document.getElementById('resultTeam').textContent = teamName;
+  document.getElementById('resultMembers').textContent = (currentTeam.member1 || '') + ' & ' + (currentTeam.member2 || '');
   document.getElementById('resultScore').textContent = 
     currentWod.type === 'For Time' 
       ? `${Math.floor(timerSeconds/60)}:${String(timerSeconds%60).padStart(2,'0')}`
       : `${reps} REPS`;
   document.getElementById('resultDetails').textContent = 
-    `${teamName} — ${currentWod.name} | No-rep: ${noReps} | Giudice: ${judge.name}`;
+    `${currentWod.name} | No-rep: ${noReps} | Giudice: ${judge.name}`;
 }
 
 window.nextTeam = function() {
