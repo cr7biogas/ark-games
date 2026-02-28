@@ -165,6 +165,9 @@ onValue(ref(db, PATHS.workouts), (snap) => {
 
 window.switchCategory = function(cat) {
   currentCategory = cat;
+  // Update rotate index to match manual selection
+  const idx = ['Open', 'Experience', 'Scaled'].indexOf(cat);
+  if (idx >= 0 && typeof rotateIndex !== 'undefined') rotateIndex = idx;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   event.target.classList.add('active');
   renderBoard();
@@ -455,6 +458,27 @@ onValue(ref(db, PATHS.timer), (snap) => {
   updateLiveTimer();
   liveTimerInterval = setInterval(updateLiveTimer, 200);
 });
+
+// ========== AUTO-ROTATE CATEGORIES ==========
+const rotateCategories = ['Open', 'Experience', 'Scaled'];
+let rotateIndex = 0;
+
+function autoRotateCategory() {
+  rotateIndex = (rotateIndex + 1) % rotateCategories.length;
+  currentCategory = rotateCategories[rotateIndex];
+  
+  // Update tab UI
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const catClass = currentCategory.toLowerCase();
+  const activeTab = document.querySelector(`.tab-${catClass}`);
+  if (activeTab) activeTab.classList.add('active');
+  
+  renderBoard();
+  console.log('Auto-rotate to:', currentCategory);
+}
+
+// Start auto-rotate: every 20 seconds
+setInterval(autoRotateCategory, 20000);
 </script>
 </body>
 </html>
