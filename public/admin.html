@@ -1585,26 +1585,18 @@ window.jumpToHeat = async function(idx) {
   statusEl.innerHTML = `▶️ <b>${event.wodName}</b> — Heat ${event.heatNum} IN CORSO`;
 }
 
-// Manual mode wait for judges (can be cancelled) - procede anche con 1 solo giudice
+// Manual mode wait for judges - procede appena 1 giudice conferma
 function waitForJudgeConfirmationsManual(lanes, statusEl, event) {
   return new Promise((resolve) => {
-    let confirmedCount = 0;
+    let resolved = false;
     
-    const unsubscribe = onValue(ref(db, PATHS.timer + '/laneStatus'), async (snap) => {
+    const unsubscribe = onValue(ref(db, PATHS.timer + '/laneStatus'), (snap) => {
+      if (resolved) return;
+      
       const statuses = snap.val() || {};
+      let confirmedCount = 0;
       
-      // Conta i giudici attualmente registrati nelle lane (lettura fresca)
-      const judgesSnap = await get(ref(db, PATHS.timer + '/readyJudges'));
-      const judges = judgesSnap.val() || {};
-      
-      let totalNeeded = 0;
-      for (const lane of lanes) {
-        const hasJudge = Object.values(judges).some(j => j.lane === lane);
-        if (hasJudge) totalNeeded++;
-      }
-      totalNeeded = Math.max(totalNeeded, 1); // Almeno 1
-      
-      confirmedCount = 0;
+      // Conta quante lane hanno conferma
       for (const lane of lanes) {
         const s = statuses[lane];
         if (s && (s.status === 'confirmed' || s.status === 'absent')) {
@@ -1612,11 +1604,14 @@ function waitForJudgeConfirmationsManual(lanes, statusEl, event) {
         }
       }
       
-      statusEl.innerHTML = `👥 <b>${event.wodName}</b> — Heat ${event.heatNum}<br><span style="color:#FF6B35">Attendo conferma giudici... (${confirmedCount}/${totalNeeded})</span>`;
+      // Mostra progresso (aspetta almeno 1 conferma)
+      statusEl.innerHTML = `👥 <b>${event.wodName}</b> — Heat ${event.heatNum}<br><span style="color:#FF6B35">Attendo conferma giudici... (${confirmedCount} confermato/i)</span>`;
       
-      // Procedi se almeno 1 giudice ha confermato E tutti i giudici presenti hanno confermato
-      if (confirmedCount >= totalNeeded && confirmedCount >= 1) {
+      // Procedi appena almeno 1 giudice ha confermato
+      if (confirmedCount >= 1) {
+        resolved = true;
         unsubscribe();
+        console.log('✅ Giudice confermato! Avvio countdown...');
         resolve();
       }
     });
@@ -2049,32 +2044,25 @@ function renderTimeline() {
   list.innerHTML = html;
 }
 
-// Wait for judges to confirm - procede anche con 1 solo giudice presente
+// Wait for judges to confirm - procede appena 1 giudice conferma
 function waitForJudgeConfirmations(lanes, statusEl, event) {
   return new Promise((resolve) => {
-    let confirmedCount = 0;
+    let resolved = false;
     
-    const unsubscribe = onValue(ref(db, PATHS.timer + '/laneStatus'), async (snap) => {
+    const unsubscribe = onValue(ref(db, PATHS.timer + '/laneStatus'), (snap) => {
+      if (resolved) return;
+      
       if (!autoModeActive) {
+        resolved = true;
         unsubscribe();
         resolve();
         return;
       }
       
       const statuses = snap.val() || {};
+      let confirmedCount = 0;
       
-      // Conta i giudici attualmente registrati nelle lane (lettura fresca)
-      const judgesSnap = await get(ref(db, PATHS.timer + '/readyJudges'));
-      const judges = judgesSnap.val() || {};
-      
-      let totalNeeded = 0;
-      for (const lane of lanes) {
-        const hasJudge = Object.values(judges).some(j => j.lane === lane);
-        if (hasJudge) totalNeeded++;
-      }
-      totalNeeded = Math.max(totalNeeded, 1); // Almeno 1
-      
-      confirmedCount = 0;
+      // Conta quante lane hanno conferma
       for (const lane of lanes) {
         const s = statuses[lane];
         if (s && (s.status === 'confirmed' || s.status === 'absent')) {
@@ -2082,11 +2070,14 @@ function waitForJudgeConfirmations(lanes, statusEl, event) {
         }
       }
       
-      statusEl.innerHTML = `👥 <b>${event.wodName}</b> — Heat ${event.heatNum}<br><span style="color:#FF6B35">Attendo conferma giudici... (${confirmedCount}/${totalNeeded})</span>`;
+      // Mostra progresso (aspetta almeno 1 conferma)
+      statusEl.innerHTML = `👥 <b>${event.wodName}</b> — Heat ${event.heatNum}<br><span style="color:#FF6B35">Attendo conferma giudici... (${confirmedCount} confermato/i)</span>`;
       
-      // Procedi se almeno 1 giudice ha confermato E tutti i giudici presenti hanno confermato
-      if (confirmedCount >= totalNeeded && confirmedCount >= 1) {
+      // Procedi appena almeno 1 giudice ha confermato
+      if (confirmedCount >= 1) {
+        resolved = true;
         unsubscribe();
+        console.log('✅ Giudice confermato! Avvio countdown...');
         resolve();
       }
     });
