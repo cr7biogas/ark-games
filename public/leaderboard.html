@@ -300,12 +300,27 @@ async function renderBoard() {
       withScores.sort((a, b) => (b.wodResults[wod.id].reps || 0) - (a.wodResults[wod.id].reps || 0));
     }
     
+    // Assegna rank con gestione pari merito
+    let currentRank = 1;
+    let previousScore = null;
+    
     withScores.forEach((r, idx) => {
       const score = r.wodResults[wod.id];
-      // Usa rank manuale se override attivo
-      const rank = score.rankOverride ? (score.manualRank || idx + 1) : (idx + 1);
-      score._rank = rank;
-      r.totalPoints += rank;
+      const scoreValue = wod.type === 'For Time' ? (score.time || score.finalTime || 9999) : (score.reps || 0);
+      
+      // Se è un override manuale, usa quello
+      if (score.rankOverride) {
+        score._rank = score.manualRank || idx + 1;
+      } else {
+        // Se lo score è diverso dal precedente, aggiorna il rank alla posizione attuale
+        if (previousScore !== null && scoreValue !== previousScore) {
+          currentRank = idx + 1;
+        }
+        score._rank = currentRank;
+      }
+      
+      previousScore = scoreValue;
+      r.totalPoints += score._rank;
     });
     
     // Teams without score get NO points (not penalized until they actually compete)
@@ -320,11 +335,22 @@ async function renderBoard() {
   // Sort by total points (lower is better)
   results.sort((a, b) => a.totalPoints - b.totalPoints);
   
+  // Calcola rank finale con pari merito
+  let finalRank = 1;
+  let previousPoints = null;
+  results.forEach((r, idx) => {
+    if (previousPoints !== null && r.totalPoints !== previousPoints) {
+      finalRank = idx + 1;
+    }
+    r.finalRank = finalRank;
+    previousPoints = r.totalPoints;
+  });
+  
   // Render table
   const wodHeaders = catWorkouts.map(w => `<th class="score-cell">${w.name}</th>`).join('');
   
   const rows = results.map((r, idx) => {
-    const rank = idx + 1;
+    const rank = r.finalRank;
     const rankClass = rank <= 3 ? 'rank-' + rank : '';
     
     const wodCells = catWorkouts.map(wod => {
