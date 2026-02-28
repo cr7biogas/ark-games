@@ -80,7 +80,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="header">
   <button onclick="toggleFullscreen()" style="position:absolute;right:16px;top:16px;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;cursor:pointer;font-size:16px" title="Fullscreen">⛶</button>
   <h1>🏆 LEADERBOARD</h1>
-  <div class="comp-name" id="compName">ARK Games</div>
   <div class="theme">🐾 Gara a Team · L'Arca di Noè</div>
 </div>
 
@@ -91,50 +90,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="status" id="timerStatus">In corso</div>
 </div>
 
-<div id="syncIndicator" style="display:none;text-align:center;padding:8px;background:#2ecc7122;color:#2ecc71;font-size:12px;font-weight:600">
-  🔄 SYNC CON TIMELINE ATTIVO
-</div>
 <div class="tabs">
   <div class="tab tab-open active" onclick="switchCategory('Open')">🔥 Open</div>
   <div class="tab tab-experience" onclick="switchCategory('Experience')">🌱 Experience</div>
   <div class="tab tab-scaled" onclick="switchCategory('Scaled')">💪 Scaled</div>
-</div>
-
-<!-- Info Box -->
-<div class="info-box" id="infoBox" onclick="this.classList.toggle('open')">
-  <div class="info-header">
-    <span>ℹ️ Come funziona il punteggio?</span>
-    <span class="info-arrow">▶</span>
-  </div>
-  <div class="info-content">
-    <h4>📋 Sistema a punti per posizionamento</h4>
-    <p>Per ogni workout, i team vengono classificati nella loro categoria:</p>
-    <ul>
-      <li>1° posto nel workout = <strong>1 punto</strong></li>
-      <li>2° posto = <strong>2 punti</strong></li>
-      <li>3° posto = <strong>3 punti</strong></li>
-      <li>...e così via</li>
-    </ul>
-    
-    <h4>🏆 Classifica finale</h4>
-    <p>I punti di tutti i workout vengono sommati.<br>
-    <strong style="color:#2ecc71">VINCE chi ha il punteggio PIÙ BASSO</strong> (meno punti = più piazzamenti alti).</p>
-    
-    <h4>📊 Criteri per workout</h4>
-    <ul>
-      <li><strong>AMRAP:</strong> più ripetizioni = posizione migliore</li>
-      <li><strong>For Time:</strong> tempo più basso = posizione migliore</li>
-      <li><strong>EMOM:</strong> più ripetizioni completate = posizione migliore</li>
-    </ul>
-    
-    <p style="color:#F7C948;margin-top:12px">⚠️ Se un team non ha punteggio in un workout, riceve punti pari a ultimo posto + 1.</p>
-    
-    <div class="example">
-      🔄 <strong>Esempio:</strong><br>
-      Team con 1° nel WOD1 + 3° nel WOD2 + 2° nel WOD3<br>
-      = 1 + 3 + 2 = <strong style="color:#FF6B35">6 punti totali</strong>
-    </div>
-  </div>
 </div>
 
 <div class="auto-refresh"><span class="live-dot"></span>Aggiornamento in tempo reale</div>
@@ -151,12 +110,6 @@ import { db, ref, get, onValue, PATHS } from './firebase-config.js';
 
 let currentCategory = 'Open';
 let workouts = [];
-
-// Load comp name
-onValue(ref(db, PATHS.competition + '/info'), (snap) => {
-  const info = snap.val();
-  if (info) document.getElementById('compName').textContent = info.name || 'ARK Games';
-});
 
 // Load workouts
 onValue(ref(db, PATHS.workouts), (snap) => {
