@@ -221,18 +221,16 @@ onValue(ref(db, PATHS.timer), (snap) => {
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
   
   if (!timer || timer.status === 'stopped') {
-    timerEl.innerHTML = "Chi è il re dell'IA?<br><span style='color:#FF6B35'>YUJIIN!</span>";
+    timerEl.innerHTML = "🐾";
     timerEl.className = 'timer';
-    timerEl.style.fontSize = 'min(12vw, 18vh)';
-    labelEl.textContent = '🐾 ARK GAMES 2026';
+    timerEl.style.fontSize = 'min(20vw, 30vh)';
+    labelEl.textContent = 'ARK GAMES 2026';
     wodNameEl.textContent = 'In attesa del prossimo workout...';
     wodTypeEl.textContent = '';
-    // Show Eugenio background
-    document.body.style.background = 'url(/eugenio-bg.jpg) center/cover no-repeat #000';
+    document.body.style.background = '#000';
     return;
   }
   
-  // Remove background when timer is active
   document.body.style.background = '#000';
   
   // Reset font size for timer
