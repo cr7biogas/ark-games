@@ -1585,14 +1585,24 @@ window.jumpToHeat = async function(idx) {
   statusEl.innerHTML = `▶️ <b>${event.wodName}</b> — Heat ${event.heatNum} IN CORSO`;
 }
 
-// Manual mode wait for judges (can be cancelled)
+// Manual mode wait for judges (can be cancelled) - procede anche con 1 solo giudice
 function waitForJudgeConfirmationsManual(lanes, statusEl, event) {
   return new Promise((resolve) => {
     let confirmedCount = 0;
-    const totalNeeded = lanes.length;
+    
+    // Conta solo i giudici effettivamente registrati nelle lane
+    const getActiveJudgesCount = () => {
+      let count = 0;
+      for (const lane of lanes) {
+        const hasJudge = Object.values(readyJudgesCache).some(j => j.lane === lane);
+        if (hasJudge) count++;
+      }
+      return Math.max(count, 1); // Almeno 1
+    };
     
     const unsubscribe = onValue(ref(db, PATHS.timer + '/laneStatus'), (snap) => {
       const statuses = snap.val() || {};
+      const totalNeeded = getActiveJudgesCount();
       confirmedCount = 0;
       
       for (const lane of lanes) {
@@ -1604,7 +1614,8 @@ function waitForJudgeConfirmationsManual(lanes, statusEl, event) {
       
       statusEl.innerHTML = `👥 <b>${event.wodName}</b> — Heat ${event.heatNum}<br><span style="color:#FF6B35">Attendo conferma giudici... (${confirmedCount}/${totalNeeded})</span>`;
       
-      if (confirmedCount >= totalNeeded) {
+      // Procedi se almeno 1 giudice ha confermato E tutti i giudici presenti hanno confermato
+      if (confirmedCount >= totalNeeded && confirmedCount >= 1) {
         unsubscribe();
         resolve();
       }
@@ -2038,11 +2049,20 @@ function renderTimeline() {
   list.innerHTML = html;
 }
 
-// Wait for all judges to confirm their assigned teams
+// Wait for judges to confirm - procede anche con 1 solo giudice presente
 function waitForJudgeConfirmations(lanes, statusEl, event) {
   return new Promise((resolve) => {
     let confirmedCount = 0;
-    const totalNeeded = lanes.length;
+    
+    // Conta solo i giudici effettivamente registrati nelle lane
+    const getActiveJudgesCount = () => {
+      let count = 0;
+      for (const lane of lanes) {
+        const hasJudge = Object.values(readyJudgesCache).some(j => j.lane === lane);
+        if (hasJudge) count++;
+      }
+      return Math.max(count, 1); // Almeno 1
+    };
     
     const unsubscribe = onValue(ref(db, PATHS.timer + '/laneStatus'), (snap) => {
       if (!autoModeActive) {
@@ -2052,6 +2072,7 @@ function waitForJudgeConfirmations(lanes, statusEl, event) {
       }
       
       const statuses = snap.val() || {};
+      const totalNeeded = getActiveJudgesCount();
       confirmedCount = 0;
       
       for (const lane of lanes) {
@@ -2063,7 +2084,8 @@ function waitForJudgeConfirmations(lanes, statusEl, event) {
       
       statusEl.innerHTML = `👥 <b>${event.wodName}</b> — Heat ${event.heatNum}<br><span style="color:#FF6B35">Attendo conferma giudici... (${confirmedCount}/${totalNeeded})</span>`;
       
-      if (confirmedCount >= totalNeeded) {
+      // Procedi se almeno 1 giudice ha confermato E tutti i giudici presenti hanno confermato
+      if (confirmedCount >= totalNeeded && confirmedCount >= 1) {
         unsubscribe();
         resolve();
       }
@@ -2076,13 +2098,16 @@ window.toggleAutoMode = function() {
   const label = document.getElementById('auto-mode-label');
   const status = document.getElementById('auto-status');
   
-  // CHECK JUDGES before enabling auto mode
+  // CHECK JUDGES before enabling auto mode - serve almeno 1 giudice
   if (checkbox.checked) {
     const connectedJudges = Object.values(readyJudgesCache).filter(j => j.lane);
-    if (connectedJudges.length < 3) {
+    if (connectedJudges.length < 1) {
       checkbox.checked = false;
-      toast(`⚠️ Servono 3 giudici connessi! (${connectedJudges.length}/3 presenti)`);
+      toast(`⚠️ Serve almeno 1 giudice connesso!`);
       return;
+    }
+    if (connectedJudges.length < 3) {
+      toast(`⚠️ Attenzione: solo ${connectedJudges.length}/3 giudici connessi`);
     }
   }
   
