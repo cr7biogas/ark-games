@@ -78,6 +78,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <body>
 
 <div class="header">
+  <button onclick="toggleFullscreen()" style="position:absolute;right:16px;top:16px;padding:8px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;cursor:pointer;font-size:16px" title="Fullscreen">⛶</button>
   <h1>🏆 LEADERBOARD</h1>
   <div class="comp-name" id="compName">ARK Games</div>
   <div class="theme">🐾 Gara a Team · L'Arca di Noè</div>
@@ -458,6 +459,15 @@ onValue(ref(db, PATHS.timer), (snap) => {
   updateLiveTimer();
   liveTimerInterval = setInterval(updateLiveTimer, 200);
 });
+
+// ========== FULLSCREEN ==========
+window.toggleFullscreen = function() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => console.log(err));
+  } else {
+    document.exitFullscreen();
+  }
+}
 
 // ========== AUTO-ROTATE CATEGORIES ==========
 const rotateCategories = ['Open', 'Experience', 'Scaled'];
