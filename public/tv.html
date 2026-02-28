@@ -355,20 +355,9 @@ onValue(ref(db, PATHS.timer + '/laneStatus'), (snap) => {
   }
 });
 
-// LIVE SCORES - Leader shows reps, others show difference
+// LIVE SCORES - Mostra sempre il punteggio effettivo
 onValue(ref(db, PATHS.timer + '/liveScores'), (snap) => {
   const scores = snap.val() || {};
-  
-  // Find max score (leader)
-  let maxReps = 0;
-  let leaderLane = 1;
-  for (let lane = 1; lane <= 3; lane++) {
-    const reps = scores[lane]?.reps || 0;
-    if (reps > maxReps) {
-      maxReps = reps;
-      leaderLane = lane;
-    }
-  }
   
   for (let lane = 1; lane <= 3; lane++) {
     const scoreEl = document.getElementById(`lane${lane}-score`);
@@ -382,15 +371,9 @@ onValue(ref(db, PATHS.timer + '/liveScores'), (snap) => {
       lastScores[lane] = newScore;
     }
     
-    // Leader shows total reps, others show difference
-    if (lane === leaderLane || maxReps === 0) {
-      scoreEl.textContent = newScore;
-      scoreEl.style.color = '#2ecc71'; // Green for leader
-    } else {
-      const diff = newScore - maxReps;
-      scoreEl.textContent = diff; // Will be negative like -5
-      scoreEl.style.color = '#FF6B35'; // Orange for others
-    }
+    // Mostra sempre il punteggio effettivo
+    scoreEl.textContent = newScore;
+    scoreEl.style.color = '#FF6B35';
     
     if (data?.submitted) {
       cardEl.className = 'lane-card completed';
